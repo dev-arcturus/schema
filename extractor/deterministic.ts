@@ -57,9 +57,12 @@ export function extractGraph(opts: ExtractOptions): Graph {
     .filter((sf) => {
       const p = sf.getFilePath();
       if (p.includes("/node_modules/")) return false;
+      if (p.includes("/.next/")) return false;
+      if (p.includes("/dist/")) return false;
+      if (p.includes("/build/")) return false;
       const rel = relPath(opts.rootDir, p);
       if (rel.startsWith("test/") || rel.startsWith("tests/")) return false;
-      if (/\.(test|spec)\.ts$/.test(rel)) return false;
+      if (/\.(test|spec)\.tsx?$/.test(rel)) return false;
       return true;
     });
 

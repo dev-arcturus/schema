@@ -1,4 +1,5 @@
 import path from "node:path";
+import fs from "node:fs";
 import { extractGraph, type ExtractOptions } from "./deterministic";
 import { runClusterPass } from "./cluster";
 import { summarizeFiles } from "./summarize";
@@ -19,10 +20,13 @@ export async function extract(
   rootDir: string,
   opts?: { skipCache?: boolean; tsConfigFilePath?: string },
 ): Promise<ExtractResult> {
-  const tsConfigFilePath =
+  const candidate =
     opts?.tsConfigFilePath ?? path.join(rootDir, "tsconfig.json");
+  const tsConfigFilePath = fs.existsSync(candidate) ? candidate : undefined;
 
-  const extractOpts: ExtractOptions = { rootDir, tsConfigFilePath };
+  const extractOpts: ExtractOptions = tsConfigFilePath
+    ? { rootDir, tsConfigFilePath }
+    : { rootDir, globs: [`${rootDir}/**/*.{ts,tsx}`] };
   const det = extractGraph(extractOpts);
 
   const readme = await readRepoReadme(rootDir);
