@@ -97,6 +97,7 @@ type Store = {
   readme: RepoReadmeInfo | null;
 
   graph: Graph | null;
+  summary: string | null;
   loading: boolean;
   loadError: string | null;
   clusterSource?: "llm" | "fallback";
@@ -111,6 +112,8 @@ type Store = {
 
   history: HistoryEntry[];
   failureFlash: { targetId: string; until: number } | null;
+  recentlyAdded: { nodeIds: Set<string>; edgeIds: Set<string>; until: number } | null;
+  focusTargetIds: string[];
 
   visibleKinds: Partial<Record<NodeKind, boolean>>;
   toggleKind: (kind: NodeKind) => void;
@@ -147,6 +150,7 @@ export const useStore = create<Store>((set, get) => ({
   origin: null,
   readme: null,
   graph: null,
+  summary: null,
   loading: false,
   loadError: null,
   clusterSource: undefined,
@@ -160,6 +164,8 @@ export const useStore = create<Store>((set, get) => ({
 
   history: [],
   failureFlash: null,
+  recentlyAdded: null,
+  focusTargetIds: [],
 
   visibleKinds: {
     route_handler: true,
@@ -239,6 +245,10 @@ export const useStore = create<Store>((set, get) => ({
     let ok = true;
     let workingGraph = state.graph!;
     const appliedDescriptions: string[] = [];
+    const focusIds = plan.steps
+      .filter((s): s is Extract<typeof s, { kind: "op" }> => s.kind === "op")
+      .map((s) => s.targetId);
+    set({ focusTargetIds: focusIds });
 
     for (let i = 0; i < plan.steps.length; i++) {
       const step = plan.steps[i]!;
@@ -276,7 +286,24 @@ export const useStore = create<Store>((set, get) => ({
           };
           if (data.graphPatch) {
             workingGraph = applyPatch(workingGraph, data.graphPatch);
-            set({ graph: workingGraph });
+            const newNodeIds = new Set<string>(
+              (data.graphPatch.addNodes ?? []).map(
+                (n: { id: string }) => n.id,
+              ),
+            );
+            const newEdgeIds = new Set<string>(
+              (data.graphPatch.addEdges ?? []).map(
+                (e: { id: string }) => e.id,
+              ),
+            );
+            set({
+              graph: workingGraph,
+              recentlyAdded: {
+                nodeIds: newNodeIds,
+                edgeIds: newEdgeIds,
+                until: Date.now() + 3500,
+              },
+            });
           }
           appliedDescriptions.push(step.description);
         } else {
@@ -326,6 +353,7 @@ export const useStore = create<Store>((set, get) => ({
         results: final.results,
         ok,
       },
+      focusTargetIds: [],
       chatHistory: [
         ...get().chatHistory,
         { prompt, intent: plan.intent, appliedSteps: appliedDescriptions },
@@ -381,6 +409,7 @@ export const useStore = create<Store>((set, get) => ({
       const data = await res.json();
       set({
         graph: data.graph,
+        summary: data.summary ?? null,
         clusterSource: data.clusterSource,
         clusterReason: data.clusterReason,
         readme: data.readme

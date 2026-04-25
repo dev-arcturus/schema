@@ -12,6 +12,7 @@ export type ExtractResult = {
   clusterReason?: string;
   cached: boolean;
   readme: RepoReadme;
+  summary?: string;
 };
 
 export async function extract(
@@ -30,13 +31,15 @@ export async function extract(
   const cacheKey = hashRepo(rootDir, files);
 
   if (!opts?.skipCache) {
-    const cached = readCache<Graph>(rootDir, cacheKey);
-    if (cached) {
+    const cachedGraph = readCache<Graph>(rootDir, cacheKey);
+    const cachedSummary = readCache<{ summary: string }>(rootDir, `${cacheKey}-summary`);
+    if (cachedGraph) {
       return {
-        graph: cached,
-        clusterSource: cached.clusters.length > 0 ? "llm" : "fallback",
+        graph: cachedGraph,
+        clusterSource: cachedGraph.clusters.length > 0 ? "llm" : "fallback",
         cached: true,
         readme,
+        summary: cachedSummary?.summary,
       };
     }
   }
@@ -46,6 +49,9 @@ export async function extract(
 
   const refined = applyCluster(det, cluster.clusters, cluster.refinedKinds);
   writeCache(rootDir, cacheKey, refined);
+  if (cluster.summary) {
+    writeCache(rootDir, `${cacheKey}-summary`, { summary: cluster.summary });
+  }
 
   return {
     graph: refined,
@@ -53,6 +59,7 @@ export async function extract(
     clusterReason: cluster.reason,
     cached: false,
     readme,
+    summary: cluster.summary,
   };
 }
 

@@ -14,6 +14,13 @@ const KIND_VALUES = [
 ] as const;
 
 const clusterResponseSchema = z.object({
+  summary: z
+    .string()
+    .min(8)
+    .max(280)
+    .describe(
+      "Two crisp sentences describing what this codebase is and how it's organized.",
+    ),
   clusters: z
     .array(
       z.object({
@@ -28,6 +35,7 @@ const clusterResponseSchema = z.object({
 });
 
 export type ClusterResult = {
+  summary: string;
   clusters: GraphCluster[];
   refinedKinds: Map<string, NodeKind>;
   source: "llm" | "fallback";
@@ -99,7 +107,7 @@ async function callLLM(
     if (validNodeIds.has(id)) refinedKinds.set(id, kind);
   }
 
-  return { clusters, refinedKinds, source: "llm" };
+  return { summary: raw.summary, clusters, refinedKinds, source: "llm" };
 }
 
 function buildPrompt(
@@ -122,11 +130,12 @@ function buildPrompt(
 
   const lines = [
     "You are an expert software architect inspecting a TypeScript codebase.",
-    "Cluster the following nodes into 2-6 logical architectural components.",
-    "Each cluster should represent a layer or feature group (e.g. 'Auth', 'Todos', 'Database').",
-    "Every node must belong to exactly one cluster. Prefer cluster names that match the vocabulary the README uses.",
-    "Also refine each node's kind from this enum:",
-    "  route_handler | service | data_access | middleware | model | external | utility",
+    "Output JSON with three fields:",
+    "1. summary: TWO sentences describing what this codebase is and how it's organized. Keep it concrete (mention the framework if obvious).",
+    "2. clusters: 2-6 logical architectural components. Each cluster represents a layer or feature group (e.g. 'Auth', 'Todos', 'Database').",
+    "   Every node must belong to exactly one cluster. Prefer cluster names that match the README's vocabulary.",
+    "3. nodeKinds: refine each node's kind from this enum:",
+    "   route_handler | service | data_access | middleware | model | external | utility",
   ];
 
   if (readmeExcerpt && readmeExcerpt.trim().length > 0) {
@@ -168,6 +177,7 @@ function fallbackClusters(graph: Graph, reason: string): ClusterResult {
     });
   }
   return {
+    summary: `${graph.nodes.length} nodes across ${clusters.length} top-level directories.`,
     clusters,
     refinedKinds: new Map(),
     source: "fallback",

@@ -15,6 +15,7 @@ import { KindFilter } from "@/components/canvas/KindFilter";
 import { CommandBar } from "@/components/canvas/CommandBar";
 import { PlanPanel } from "@/components/canvas/PlanPanel";
 import { InsightsRail } from "@/components/canvas/InsightsRail";
+import { RepoSummary } from "@/components/canvas/RepoSummary";
 
 export default function Page() {
   const graph = useStore((s) => s.graph);
@@ -42,6 +43,7 @@ export default function Page() {
           <CommandBar />
           <PlanPanel />
           <InsightsRail />
+          <RepoSummary />
           <Toast />
         </>
       ) : (

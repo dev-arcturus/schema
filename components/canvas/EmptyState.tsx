@@ -1,9 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Github, Loader2, Play, Folder, KeyRound } from "lucide-react";
+import { Github, Loader2, Play, Folder, KeyRound, Sparkles } from "lucide-react";
 import { useStore } from "@/state/store";
 import { cn } from "@/lib/utils";
+
+const SAMPLE_REPOS: { label: string; value: string; tag: string }[] = [
+  { label: "Express + JWT demo", value: "fixtures/demo-app", tag: "local" },
+  { label: "honojs / examples", value: "honojs/examples", tag: "github" },
+  { label: "trpc / examples", value: "trpc/examples", tag: "github" },
+];
 
 export function EmptyState() {
   const loading = useStore((s) => s.loading);
@@ -19,7 +25,7 @@ export function EmptyState() {
   const [showToken, setShowToken] = useState(false);
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center p-4">
+    <div className="absolute inset-0 flex items-center justify-center overflow-y-auto p-6">
       <div className="w-full max-w-md rounded-xl border border-canvas-border bg-canvas-panel/90 p-6 shadow-panel backdrop-blur">
         <div className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent/15 text-accent">
@@ -132,6 +138,48 @@ export function EmptyState() {
             )}
           </div>
         )}
+
+        <div className="mt-5 border-t border-canvas-border pt-4">
+          <div className="text-2xs uppercase tracking-wider text-canvas-subtle">
+            Try it on
+          </div>
+          <div className="mt-2 flex flex-col gap-1.5">
+            {SAMPLE_REPOS.map((s) => (
+              <button
+                key={s.value}
+                onClick={() => {
+                  setRepoSource(s.tag === "github" ? "github" : "local");
+                  setRepoValue(s.value);
+                }}
+                disabled={loading}
+                className="group flex items-center justify-between rounded-md border border-transparent bg-canvas-bg/40 px-3 py-1.5 text-left text-xs text-canvas-muted transition-colors hover:border-canvas-border hover:bg-canvas-bg/70 hover:text-canvas-ink"
+              >
+                <span>{s.label}</span>
+                <span className="font-mono text-2xs text-canvas-subtle">
+                  {s.tag}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-5 border-t border-canvas-border pt-4">
+          <div className="flex items-center gap-1.5 text-2xs uppercase tracking-wider text-canvas-subtle">
+            <Sparkles className="h-3 w-3 text-accent" />
+            Once loaded, try a prompt
+          </div>
+          <div className="mt-2 flex flex-col gap-1 text-2xs text-canvas-muted">
+            <code className="rounded bg-canvas-bg/40 px-2 py-1 font-mono">
+              "protect every unauthed resource route"
+            </code>
+            <code className="rounded bg-canvas-bg/40 px-2 py-1 font-mono">
+              "memoize verifyToken so middleware doesn&apos;t re-verify"
+            </code>
+            <code className="rounded bg-canvas-bg/40 px-2 py-1 font-mono">
+              "extract auth into its own module"
+            </code>
+          </div>
+        </div>
       </div>
     </div>
   );

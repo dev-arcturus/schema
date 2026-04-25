@@ -9,6 +9,7 @@ import {
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
+  useReactFlow,
   type Edge,
   type Node,
   type NodeTypes,
@@ -27,13 +28,24 @@ const nodeTypes: NodeTypes = {
 };
 
 export function GraphCanvas() {
+  return (
+    <ReactFlowProvider>
+      <GraphCanvasInner />
+    </ReactFlowProvider>
+  );
+}
+
+function GraphCanvasInner() {
   const graph = useStore((s) => s.graph);
   const selection = useStore((s) => s.selection);
   const failureFlash = useStore((s) => s.failureFlash);
+  const recentlyAdded = useStore((s) => s.recentlyAdded);
+  const focusTargetIds = useStore((s) => s.focusTargetIds);
   const visibleKinds = useStore((s) => s.visibleKinds);
   const selectNode = useStore((s) => s.selectNode);
   const selectEdge = useStore((s) => s.selectEdge);
   const clearSelection = useStore((s) => s.clearSelection);
+  const rf = useReactFlow();
 
   const filteredGraph = useMemo(() => {
     if (!graph) return null;
@@ -74,17 +86,24 @@ export function GraphCanvas() {
         failureFlash.targetId === n.id &&
         failureFlash.until > Date.now()
       );
+      const isNew = !!(
+        recentlyAdded &&
+        recentlyAdded.nodeIds.has(n.id) &&
+        recentlyAdded.until > Date.now()
+      );
+      const isFocus = focusTargetIds.includes(n.id);
       out.push({
         id: n.id,
         type: isRoute ? "route" : "function",
         position: { x: pos.x, y: pos.y },
-        data: { node: n, failed },
+        data: { node: n, failed, isNew, isFocus },
         selected: selection?.kind === "node" && selection.id === n.id,
         draggable: true,
+        className: isNew ? "schema-node-new" : isFocus ? "schema-node-focus" : "",
       });
     }
     return out;
-  }, [filteredGraph, layout, selection, failureFlash]);
+  }, [filteredGraph, layout, selection, failureFlash, recentlyAdded, focusTargetIds]);
 
   const flowEdges: Edge[] = useMemo(() => {
     if (!filteredGraph) return [];
@@ -98,28 +117,33 @@ export function GraphCanvas() {
       .map((e) => {
         const style = RELATION_STYLE[e.relation];
         const isSelected = selection?.kind === "edge" && selection.id === e.id;
+        const isNew = !!(
+          recentlyAdded &&
+          recentlyAdded.edgeIds.has(e.id) &&
+          recentlyAdded.until > Date.now()
+        );
         return {
           id: e.id,
           source: e.source,
           target: e.target,
           type: "smoothstep",
-          animated: e.relation === "applies_middleware",
+          animated: e.relation === "applies_middleware" || isNew,
           markerEnd: {
             type: MarkerType.ArrowClosed,
             width: 18,
             height: 18,
-            color: style.stroke,
+            color: isNew ? "hsl(142 70% 60%)" : style.stroke,
           },
           style: {
-            stroke: style.stroke,
-            strokeWidth: style.width + (isSelected ? 0.5 : 0),
+            stroke: isNew ? "hsl(142 70% 60%)" : style.stroke,
+            strokeWidth: (isNew ? style.width + 1 : style.width) + (isSelected ? 0.5 : 0),
             ...(style.dash ? { strokeDasharray: style.dash } : {}),
-            opacity: isSelected ? 1 : 0.9,
+            opacity: isSelected || isNew ? 1 : 0.9,
           },
           data: { relation: e.relation },
         };
       });
-  }, [filteredGraph, selection]);
+  }, [filteredGraph, selection, recentlyAdded]);
 
   // Force a redraw shortly after a failure flash so it can clear
   useEffect(() => {
@@ -128,8 +152,42 @@ export function GraphCanvas() {
     return () => clearTimeout(t);
   }, [failureFlash]);
 
+  // Auto-clear recentlyAdded
+  useEffect(() => {
+    if (!recentlyAdded) return;
+    const ms = recentlyAdded.until - Date.now();
+    if (ms <= 0) {
+      useStore.setState({ recentlyAdded: null });
+      return;
+    }
+    const t = setTimeout(
+      () => useStore.setState({ recentlyAdded: null }),
+      ms,
+    );
+    return () => clearTimeout(t);
+  }, [recentlyAdded]);
+
+  // Auto-zoom to focus targets when a plan starts running
+  useEffect(() => {
+    if (focusTargetIds.length === 0 || !graph) return;
+    const targets = focusTargetIds
+      .map((id) => layout.positions.get(id))
+      .filter((p): p is { x: number; y: number; id: string } => Boolean(p));
+    if (targets.length === 0) return;
+    const xs = targets.map((p) => p.x);
+    const ys = targets.map((p) => p.y);
+    const minX = Math.min(...xs) - 80;
+    const minY = Math.min(...ys) - 80;
+    const maxX = Math.max(...xs) + 300;
+    const maxY = Math.max(...ys) + 140;
+    rf.fitBounds(
+      { x: minX, y: minY, width: maxX - minX, height: maxY - minY },
+      { duration: 600, padding: 0.1 },
+    );
+  }, [focusTargetIds, graph, layout, rf]);
+
   return (
-    <ReactFlowProvider>
+    <>
       <ReactFlow
         nodes={flowNodes}
         edges={flowEdges}
@@ -185,6 +243,6 @@ export function GraphCanvas() {
           nodeStrokeWidth={0}
         />
       </ReactFlow>
-    </ReactFlowProvider>
+    </>
   );
 }
