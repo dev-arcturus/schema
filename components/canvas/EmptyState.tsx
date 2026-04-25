@@ -1,0 +1,166 @@
+"use client";
+
+import { useState } from "react";
+import { Github, Loader2, Play, Folder, KeyRound } from "lucide-react";
+import { useStore } from "@/state/store";
+import { cn } from "@/lib/utils";
+
+export function EmptyState() {
+  const loading = useStore((s) => s.loading);
+  const error = useStore((s) => s.loadError);
+  const repoSource = useStore((s) => s.repoSource);
+  const repoValue = useStore((s) => s.repoValue);
+  const repoToken = useStore((s) => s.repoToken);
+  const setRepoSource = useStore((s) => s.setRepoSource);
+  const setRepoValue = useStore((s) => s.setRepoValue);
+  const setRepoToken = useStore((s) => s.setRepoToken);
+  const loadGraph = useStore((s) => s.loadGraph);
+
+  const [showToken, setShowToken] = useState(false);
+
+  return (
+    <div className="absolute inset-0 flex items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-xl border border-canvas-border bg-canvas-panel/90 p-6 shadow-panel backdrop-blur">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent/15 text-accent">
+            <span className="text-xs font-semibold">S</span>
+          </div>
+          <div>
+            <div className="text-base font-medium text-canvas-ink">Schema</div>
+            <div className="text-2xs uppercase tracking-wider text-canvas-subtle">
+              brownfield architecture editor
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 rounded-md border border-canvas-border bg-canvas-bg/40 p-1">
+          <TabButton
+            active={repoSource === "github"}
+            onClick={() => {
+              setRepoSource("github");
+              if (repoValue === "fixtures/demo-app") setRepoValue("");
+            }}
+          >
+            <Github className="h-3.5 w-3.5" />
+            GitHub
+          </TabButton>
+          <TabButton
+            active={repoSource === "local"}
+            onClick={() => {
+              setRepoSource("local");
+              if (!repoValue) setRepoValue("fixtures/demo-app");
+            }}
+          >
+            <Folder className="h-3.5 w-3.5" />
+            Local
+          </TabButton>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-2">
+          <label className="text-2xs uppercase tracking-wider text-canvas-subtle">
+            {repoSource === "github" ? "GitHub repository" : "Local path"}
+          </label>
+          <input
+            value={repoValue}
+            onChange={(e) => setRepoValue(e.target.value)}
+            className="rounded-md border border-canvas-border bg-canvas-bg/60 px-3 py-2 font-mono text-xs text-canvas-ink outline-none focus:border-accent"
+            placeholder={
+              repoSource === "github"
+                ? "owner/repo  or  https://github.com/owner/repo"
+                : "fixtures/demo-app"
+            }
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+          />
+        </div>
+
+        {repoSource === "github" ? (
+          <div className="mt-3 flex flex-col gap-2">
+            <button
+              onClick={() => setShowToken((v) => !v)}
+              className="flex items-center gap-1.5 self-start text-2xs uppercase tracking-wider text-canvas-subtle transition-colors hover:text-canvas-muted"
+            >
+              <KeyRound className="h-3 w-3" />
+              {showToken ? "hide token" : "private repo? add token"}
+            </button>
+            {showToken ? (
+              <input
+                type="password"
+                value={repoToken}
+                onChange={(e) => setRepoToken(e.target.value)}
+                className="rounded-md border border-canvas-border bg-canvas-bg/60 px-3 py-2 font-mono text-xs text-canvas-ink outline-none focus:border-accent"
+                placeholder="ghp_…  (kept in memory; sent only with this clone)"
+                spellCheck={false}
+              />
+            ) : null}
+          </div>
+        ) : null}
+
+        <button
+          onClick={loadGraph}
+          disabled={loading || !repoValue.trim()}
+          className={cn(
+            "mt-5 inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-3 py-2 text-sm font-medium text-canvas-bg transition hover:brightness-110",
+            "disabled:cursor-not-allowed disabled:opacity-50",
+          )}
+        >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Play className="h-3.5 w-3.5" fill="currentColor" />
+          )}
+          {loading ? loadingLabel(repoSource) : "Extract architecture"}
+        </button>
+
+        {error ? (
+          <div className="mt-3 rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-2xs text-rose-200">
+            {error}
+          </div>
+        ) : (
+          <div className="mt-4 text-2xs leading-relaxed text-canvas-subtle">
+            {repoSource === "github" ? (
+              <>
+                Public repos work without a token. Schema reads the README for
+                domain context and runs the test suite to gate every edit.
+              </>
+            ) : (
+              <>
+                Default points at the bundled demo (Express + sqlite + JWT, with
+                a deliberate auth gap on resource routes).
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "flex items-center justify-center gap-2 rounded px-2 py-1.5 text-xs transition-colors",
+        active
+          ? "bg-canvas-panel text-canvas-ink shadow-sm"
+          : "text-canvas-muted hover:text-canvas-ink",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function loadingLabel(source: "local" | "github"): string {
+  return source === "github" ? "Cloning + extracting…" : "Extracting…";
+}

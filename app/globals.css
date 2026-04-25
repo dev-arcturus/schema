@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body {
+    height: 100%;
+    background: hsl(220 14% 4%);
+    color: hsl(220 10% 96%);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    overscroll-behavior: none;
+  }
+
+  *::selection {
+    background: hsl(214 95% 67% / 0.3);
+  }
+}
+
+@layer components {
+  .react-flow {
+    background: hsl(220 14% 4%);
+    --xy-background-color-default: hsl(220 14% 4%);
+    --xy-background-pattern-dots-color-default: hsl(220 14% 14%);
+    --xy-edge-stroke-default: hsl(220 8% 40%);
+    --xy-edge-stroke-selected-default: hsl(214 95% 67%);
+    --xy-edge-stroke-width-default: 1.25;
+    --xy-handle-background-color-default: hsl(220 14% 18%);
+    --xy-handle-border-color-default: hsl(220 14% 30%);
+    --xy-selection-background-color-default: hsl(214 95% 67% / 0.08);
+    --xy-selection-border-default: 1px dashed hsl(214 95% 67% / 0.5);
+  }
+
+  .react-flow__attribution {
+    display: none;
+  }
+
+  .react-flow__controls {
+    box-shadow: 0 4px 16px hsl(220 14% 2% / 0.6);
+    border: 1px solid hsl(220 14% 12%);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: hsl(220 14% 7%);
+  }
+
+  .react-flow__controls-button {
+    background: hsl(220 14% 7%);
+    border-bottom: 1px solid hsl(220 14% 12%);
+    color: hsl(220 8% 60%);
+    width: 28px;
+    height: 28px;
+  }
+
+  .react-flow__controls-button:hover {
+    background: hsl(220 14% 10%);
+    color: hsl(220 10% 96%);
+  }
+
+  .react-flow__controls-button svg {
+    fill: currentColor;
+    max-height: 14px;
+    max-width: 14px;
+  }
+
+  .react-flow__minimap {
+    background: hsl(220 14% 6%);
+    border: 1px solid hsl(220 14% 12%);
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .react-flow__edge-path {
+    stroke-linecap: round;
+  }
+
+  .react-flow__edge.selected .react-flow__edge-path,
+  .react-flow__edge:focus .react-flow__edge-path {
+    stroke: hsl(214 95% 67%);
+  }
+}
+
+@layer utilities {
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+}

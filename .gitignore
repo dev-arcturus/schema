@@ -1,0 +1,14 @@
+node_modules
+.next
+.env
+.env.local
+.env*.local
+*.log
+.DS_Store
+.vitest
+coverage
+/snapshots
+.schema-cache
+tsconfig.tsbuildinfo
+fixtures/**/node_modules
+fixtures/**/.schema-cache
