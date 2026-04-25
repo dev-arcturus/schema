@@ -37,7 +37,11 @@ const op: Op<typeof paramsSchema> = {
       path.join(target.graph.rootDir, route.file),
     );
 
-    const call = findRouteCall(sourceFile, route.range.start);
+    const method = (route.meta?.httpMethod ?? "").toLowerCase();
+    const httpPath = route.meta?.httpPath ?? "";
+    const call =
+      findRouteCallByMethodAndPath(sourceFile, method, httpPath) ??
+      findRouteCall(sourceFile, route.range.start);
     if (!call) throw new Error("could not locate route registration call");
 
     const args = call.getArguments();
@@ -82,6 +86,34 @@ function findRouteCall(sf: SourceFile, startPos: number): CallExpression | null 
   if (!node) return null;
   const call = node.getFirstAncestor((a) => Node.isCallExpression(a)) ?? node;
   return Node.isCallExpression(call) ? call : null;
+}
+
+function findRouteCallByMethodAndPath(
+  sf: SourceFile,
+  method: string,
+  fullHttpPath: string,
+): CallExpression | null {
+  if (!method) return null;
+  let found: CallExpression | null = null;
+  sf.forEachDescendant((d) => {
+    if (found) return;
+    if (!Node.isCallExpression(d)) return;
+    const callee = d.getExpression();
+    if (!Node.isPropertyAccessExpression(callee)) return;
+    if (callee.getName().toLowerCase() !== method) return;
+    const args = d.getArguments();
+    const first = args[0];
+    if (!first || !Node.isStringLiteral(first)) return;
+    const localPath = first.getLiteralValue();
+    if (
+      fullHttpPath === localPath ||
+      fullHttpPath.endsWith(localPath) ||
+      (localPath === "/" && fullHttpPath !== "")
+    ) {
+      found = d;
+    }
+  });
+  return found;
 }
 
 function ensureImport(

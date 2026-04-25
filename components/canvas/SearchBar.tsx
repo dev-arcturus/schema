@@ -65,7 +65,7 @@ export function SearchBar() {
   if (!graph) return null;
 
   return (
-    <div className="pointer-events-auto absolute right-4 top-4 z-20">
+    <div className="pointer-events-auto absolute right-4 top-16 z-20">
       <div
         className={cn(
           "flex items-center gap-2 rounded-md border border-canvas-border bg-canvas-panel/95 shadow-panel backdrop-blur transition-all",

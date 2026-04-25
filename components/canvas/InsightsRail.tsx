@@ -20,7 +20,7 @@ export function InsightsRail() {
   const visible = insights.filter((i) => !dismissedIds.has(i.id));
 
   return (
-    <div className="pointer-events-auto absolute left-4 top-16 z-10 w-[280px]">
+    <div className="pointer-events-auto absolute left-4 top-28 z-10 w-[280px]">
       <button
         onClick={() => setExpanded((v) => !v)}
         className={cn(

@@ -42,7 +42,7 @@ export function CommandBar() {
     planState.phase === "done";
 
   return (
-    <div className="pointer-events-auto absolute left-1/2 top-4 z-30 w-[640px] max-w-[calc(100%-32px)] -translate-x-1/2">
+    <div className="pointer-events-auto absolute bottom-4 left-1/2 z-30 w-[640px] max-w-[calc(100%-32px)] -translate-x-1/2">
       {showInput ? (
         <form
           onSubmit={(e) => {

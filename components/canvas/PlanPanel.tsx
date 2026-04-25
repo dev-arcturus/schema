@@ -21,8 +21,64 @@ export function PlanPanel() {
   const cancel = useStore((s) => s.cancelPlan);
   const graph = useStore((s) => s.graph);
 
-  if (planState.phase === "idle" || planState.phase === "thinking") {
-    return null;
+  if (planState.phase === "idle") return null;
+
+  if (planState.phase === "thinking") {
+    const partial = planState.partial ?? {};
+    const intent = (partial as { intent?: string }).intent;
+    const partialSteps = ((partial as { steps?: unknown[] }).steps ?? []).filter(
+      (s): s is Partial<Step> => Boolean(s),
+    );
+    return (
+      <div className="absolute bottom-20 left-1/2 z-20 w-[640px] max-w-[calc(100%-32px)] -translate-x-1/2 animate-fade-in">
+        <div className="flex max-h-[calc(100vh-180px)] flex-col rounded-xl border border-canvas-border bg-canvas-panel/95 shadow-panel backdrop-blur">
+          <div className="flex items-start justify-between gap-3 border-b border-canvas-border px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 text-2xs uppercase tracking-wider text-canvas-subtle">
+                <Sparkles className="h-3 w-3 animate-pulse text-accent" />
+                <span>thinking</span>
+              </div>
+              <div className="mt-1 truncate text-sm text-canvas-ink">
+                {intent ?? planState.prompt}
+              </div>
+            </div>
+            <button
+              onClick={cancel}
+              className="rounded p-1 text-canvas-subtle hover:bg-canvas-bg/40 hover:text-canvas-ink"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <div className="max-h-[400px] overflow-y-auto">
+            {partialSteps.length === 0 ? (
+              <div className="px-4 py-3 text-2xs text-canvas-muted">
+                streaming plan from Sonnet…
+              </div>
+            ) : (
+              partialSteps.map((s, i) => (
+                <div key={i} className="border-b border-canvas-border last:border-b-0 px-4 py-2">
+                  <div className="flex items-center gap-3 text-xs text-canvas-ink">
+                    <div className="flex h-4 w-4 items-center justify-center rounded-full border border-canvas-border bg-canvas-bg text-2xs text-canvas-subtle">
+                      {i + 1}
+                    </div>
+                    <span className="truncate">
+                      {s.description ?? "…"}
+                    </span>
+                  </div>
+                  <div className="mt-1 ml-7 flex items-center gap-2 text-2xs text-canvas-subtle">
+                    {s.kind === "op" && s.opName ? (
+                      <span className="font-mono">{s.opName}</span>
+                    ) : s.kind === "freeform" ? (
+                      <span className="font-mono text-violet-300">freeform</span>
+                    ) : null}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const plan = planState.plan;
@@ -35,8 +91,8 @@ export function PlanPanel() {
   const ok = isDone ? planState.ok : null;
 
   return (
-    <div className="absolute left-1/2 top-20 z-20 w-[640px] max-w-[calc(100%-32px)] -translate-x-1/2 animate-fade-in">
-      <div className="flex max-h-[calc(100vh-160px)] flex-col rounded-xl border border-canvas-border bg-canvas-panel/95 shadow-panel backdrop-blur">
+    <div className="absolute bottom-20 left-1/2 z-20 w-[640px] max-w-[calc(100%-32px)] -translate-x-1/2 animate-fade-in">
+      <div className="flex max-h-[calc(100vh-180px)] flex-col rounded-xl border border-canvas-border bg-canvas-panel/95 shadow-panel backdrop-blur">
         <div className="flex items-start justify-between gap-3 border-b border-canvas-border px-4 py-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 text-2xs uppercase tracking-wider text-canvas-subtle">

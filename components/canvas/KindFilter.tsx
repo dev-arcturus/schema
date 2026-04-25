@@ -24,7 +24,7 @@ export function KindFilter() {
   if (present.length <= 1) return null;
 
   return (
-    <div className="pointer-events-auto absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-md border border-canvas-border bg-canvas-panel/95 px-1.5 py-1 shadow-panel backdrop-blur">
+    <div className="pointer-events-auto absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-1 rounded-md border border-canvas-border bg-canvas-panel/95 px-1.5 py-1 shadow-panel backdrop-blur">
       {present.map((k) => {
         const count = counts.get(k.kind) ?? 0;
         const visible = visibleKinds[k.kind] ?? true;

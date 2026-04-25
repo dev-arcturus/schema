@@ -22,7 +22,11 @@ export type ConversationTurn = {
 
 export type PlanState =
   | { phase: "idle" }
-  | { phase: "thinking"; prompt: string }
+  | {
+      phase: "thinking";
+      prompt: string;
+      partial?: Partial<Plan> | null;
+    }
   | {
       phase: "preview";
       prompt: string;
@@ -192,26 +196,68 @@ export const useStore = create<Store>((set, get) => ({
   async submitPrompt(prompt) {
     const { graph, chatHistory } = get();
     if (!graph || !prompt.trim()) return;
-    set({ planState: { phase: "thinking", prompt } });
+    set({ planState: { phase: "thinking", prompt, partial: null } });
     try {
       const res = await fetch("/api/plan/generate", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ prompt, graph, history: chatHistory.slice(-3) }),
+        body: JSON.stringify({
+          prompt,
+          graph,
+          history: chatHistory.slice(-3),
+          stream: true,
+        }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.plan) {
-        throw new Error(data.error ?? "plan generation failed");
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error ?? `plan failed (${res.status})`);
       }
-      const plan: Plan = data.plan;
-      set({ planState: { phase: "preview", prompt, plan } });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finalPlan: Plan | null = null;
+      let streamError: string | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          let payload: { type: string; plan?: Partial<Plan>; error?: string };
+          try {
+            payload = JSON.parse(line);
+          } catch {
+            continue;
+          }
+          if (payload.type === "partial") {
+            const cur = get().planState;
+            if (cur.phase === "thinking") {
+              set({
+                planState: {
+                  phase: "thinking",
+                  prompt: cur.prompt,
+                  partial: payload.plan ?? null,
+                },
+              });
+            }
+          } else if (payload.type === "final" && payload.plan) {
+            finalPlan = payload.plan as Plan;
+          } else if (payload.type === "error") {
+            streamError = payload.error ?? "stream error";
+          }
+        }
+      }
+
+      if (streamError) throw new Error(streamError);
+      if (!finalPlan) throw new Error("no plan returned");
+      set({ planState: { phase: "preview", prompt, plan: finalPlan } });
     } catch (err) {
       set({
         planState: { phase: "idle" },
-      });
-      console.error("submitPrompt failed:", err);
-      // Surface error inline via applyState (reuse existing failure UX)
-      set((s) => ({
         applyState: {
           phase: "error",
           opName: "plan",
@@ -219,7 +265,7 @@ export const useStore = create<Store>((set, get) => ({
           error: err instanceof Error ? err.message : "plan failed",
           filesChanged: [],
         },
-      }));
+      });
     }
   },
 

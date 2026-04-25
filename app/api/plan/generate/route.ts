@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { anthropic } from "@ai-sdk/anthropic";
-import { generateObject } from "ai";
+import { generateObject, streamObject } from "ai";
 import { planSchema, type Plan } from "@/lib/planSchema";
 import { OPS_REGISTRY_DESCRIPTION } from "@/lib/opsRegistryDescription";
 import type { Graph } from "@/extractor/types";
@@ -14,6 +14,7 @@ type Body = {
   prompt: string;
   graph: Graph;
   history?: Turn[];
+  stream?: boolean;
 };
 
 export async function POST(req: Request) {
@@ -35,6 +36,10 @@ export async function POST(req: Request) {
       );
     }
 
+    if (body.stream) {
+      return streamingResponse(body);
+    }
+
     const plan = await generatePlan(body.prompt, body.graph, body.history ?? []);
     const sanitized = sanitizePlan(plan, body.graph);
     return NextResponse.json({ plan: sanitized });
@@ -46,11 +51,77 @@ export async function POST(req: Request) {
   }
 }
 
+function streamingResponse(body: Body): Response {
+  const { systemPrompt, userPrompt } = buildPrompts(
+    body.prompt,
+    body.graph,
+    body.history ?? [],
+  );
+
+  const result = streamObject({
+    model: anthropic("claude-sonnet-4-6"),
+    schema: planSchema,
+    temperature: 0.1,
+    system: systemPrompt,
+    prompt: userPrompt,
+    maxTokens: 4000,
+  });
+
+  const enc = new TextEncoder();
+  const readable = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const partial of result.partialObjectStream) {
+          controller.enqueue(
+            enc.encode(JSON.stringify({ type: "partial", plan: partial }) + "\n"),
+          );
+        }
+        const final = await result.object;
+        const sanitized = sanitizePlan(final, body.graph);
+        controller.enqueue(
+          enc.encode(JSON.stringify({ type: "final", plan: sanitized }) + "\n"),
+        );
+      } catch (err) {
+        controller.enqueue(
+          enc.encode(
+            JSON.stringify({
+              type: "error",
+              error: err instanceof Error ? err.message : "stream failed",
+            }) + "\n",
+          ),
+        );
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(readable, {
+    headers: {
+      "content-type": "application/x-ndjson",
+      "cache-control": "no-store",
+    },
+  });
+}
+
 async function generatePlan(
   prompt: string,
   graph: Graph,
   history: Turn[],
 ): Promise<Plan> {
+  const { systemPrompt, userPrompt } = buildPrompts(prompt, graph, history);
+  const { object } = await generateObject({
+    model: anthropic("claude-sonnet-4-6"),
+    schema: planSchema,
+    temperature: 0.1,
+    system: systemPrompt,
+    prompt: userPrompt,
+    maxTokens: 4000,
+  });
+  return object;
+}
+
+function buildPrompts(prompt: string, graph: Graph, history: Turn[]) {
   const compactNodes = graph.nodes.map((n) => ({
     id: n.id,
     name: n.name,
@@ -116,16 +187,7 @@ async function generatePlan(
     JSON.stringify(compactClusters, null, 2),
   ].join("\n");
 
-  const { object } = await generateObject({
-    model: anthropic("claude-sonnet-4-6"),
-    schema: planSchema,
-    temperature: 0.1,
-    system: systemPrompt,
-    prompt: userPrompt,
-    maxTokens: 4000,
-  });
-
-  return object;
+  return { systemPrompt, userPrompt };
 }
 
 function sanitizePlan(plan: Plan, graph: Graph): Plan {

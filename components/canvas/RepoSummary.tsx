@@ -15,7 +15,7 @@ export function RepoSummary() {
     origin?.kind === "github" ? `${origin.owner}/${origin.repo}` : "this repo";
 
   return (
-    <div className="pointer-events-auto absolute bottom-16 left-1/2 z-10 max-w-[640px] -translate-x-1/2 px-4">
+    <div className="pointer-events-auto absolute left-1/2 top-16 z-10 max-w-[560px] -translate-x-1/2 px-4">
       <div className="rounded-md border border-canvas-border bg-canvas-panel/85 px-3 py-2 text-2xs text-canvas-muted shadow-panel backdrop-blur">
         <span className="text-canvas-subtle">{subject} —</span> {summary}
       </div>
