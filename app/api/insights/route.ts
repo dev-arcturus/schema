@@ -1,11 +1,21 @@
+import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { anthropic } from "@ai-sdk/anthropic";
 import { generateObject } from "ai";
 import { z } from "zod";
 import type { Graph } from "@/extractor/types";
+import { readCache, writeCache } from "@/extractor/cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+function graphHash(graph: Graph): string {
+  const compact = graph.nodes
+    .map((n) => `${n.id}:${n.kind}`)
+    .sort()
+    .join(",");
+  return crypto.createHash("sha256").update(compact).digest("hex").slice(0, 16);
+}
 
 const insightSchema = z.object({
   insights: z
@@ -51,7 +61,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ insights: deterministicInsights(graph) });
     }
 
+    const cacheKey = `insights-${graphHash(graph)}`;
+    const cached = readCache<{ insights: z.infer<typeof insightSchema>["insights"] }>(
+      graph.rootDir,
+      cacheKey,
+    );
+    if (cached?.insights) {
+      return NextResponse.json({ insights: cached.insights });
+    }
+
     const llm = await callLLM(graph);
+    writeCache(graph.rootDir, cacheKey, { insights: llm.insights });
     return NextResponse.json({ insights: llm.insights });
   } catch (err) {
     return NextResponse.json(
