@@ -8,8 +8,8 @@ node_modules
 .vitest
 coverage
 /snapshots
-.schema-cache
+/.schema-cache
 .schema-clones
 tsconfig.tsbuildinfo
 fixtures/**/node_modules
-fixtures/**/.schema-cache
+# fixtures/demo-app/.schema-cache IS committed (pre-warm for instant demo extract)

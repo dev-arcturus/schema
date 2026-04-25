@@ -1,0 +1,1011 @@
+{
+  "nodes": [
+    {
+      "id": "fn:src/app.ts:createApp",
+      "kind": "utility",
+      "name": "createApp",
+      "file": "src/app.ts",
+      "range": {
+        "start": 347,
+        "end": 680
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:app"
+    },
+    {
+      "id": "fn:src/db/migrations.ts:runMigrations",
+      "kind": "data_access",
+      "name": "runMigrations",
+      "file": "src/db/migrations.ts",
+      "range": {
+        "start": 40,
+        "end": 635
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:db"
+    },
+    {
+      "id": "fn:src/db/sqlite.ts:openDatabase",
+      "kind": "data_access",
+      "name": "openDatabase",
+      "file": "src/db/sqlite.ts",
+      "range": {
+        "start": 77,
+        "end": 255
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:db"
+    },
+    {
+      "id": "fn:src/middleware/auth.ts:identifyUser",
+      "kind": "middleware",
+      "name": "identifyUser",
+      "file": "src/middleware/auth.ts",
+      "range": {
+        "start": 222,
+        "end": 567
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:middleware"
+    },
+    {
+      "id": "fn:src/middleware/auth.ts:requireAuth",
+      "kind": "middleware",
+      "name": "requireAuth",
+      "file": "src/middleware/auth.ts",
+      "range": {
+        "start": 569,
+        "end": 1049
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:middleware"
+    },
+    {
+      "id": "fn:src/middleware/error.ts:errorHandler",
+      "kind": "middleware",
+      "name": "errorHandler",
+      "file": "src/middleware/error.ts",
+      "range": {
+        "start": 124,
+        "end": 457
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:middleware"
+    },
+    {
+      "id": "fn:src/repos/todoRepo.ts:toTodo",
+      "kind": "utility",
+      "name": "toTodo",
+      "file": "src/repos/todoRepo.ts",
+      "range": {
+        "start": 261,
+        "end": 432
+      },
+      "meta": {
+        "isExported": false
+      },
+      "cluster": "cluster:todos"
+    },
+    {
+      "id": "fn:src/repos/todoRepo.ts:listTodos",
+      "kind": "data_access",
+      "name": "listTodos",
+      "file": "src/repos/todoRepo.ts",
+      "range": {
+        "start": 434,
+        "end": 686
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:todos"
+    },
+    {
+      "id": "fn:src/repos/todoRepo.ts:createTodo",
+      "kind": "data_access",
+      "name": "createTodo",
+      "file": "src/repos/todoRepo.ts",
+      "range": {
+        "start": 688,
+        "end": 959
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:todos"
+    },
+    {
+      "id": "fn:src/repos/todoRepo.ts:deleteTodo",
+      "kind": "data_access",
+      "name": "deleteTodo",
+      "file": "src/repos/todoRepo.ts",
+      "range": {
+        "start": 961,
+        "end": 1170
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:todos"
+    },
+    {
+      "id": "fn:src/repos/userRepo.ts:createUser",
+      "kind": "data_access",
+      "name": "createUser",
+      "file": "src/repos/userRepo.ts",
+      "range": {
+        "start": 124,
+        "end": 526
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:auth"
+    },
+    {
+      "id": "fn:src/repos/userRepo.ts:findUserByEmail",
+      "kind": "data_access",
+      "name": "findUserByEmail",
+      "file": "src/repos/userRepo.ts",
+      "range": {
+        "start": 528,
+        "end": 887
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:auth"
+    },
+    {
+      "id": "fn:src/repos/userRepo.ts:findUserById",
+      "kind": "data_access",
+      "name": "findUserById",
+      "file": "src/repos/userRepo.ts",
+      "range": {
+        "start": 889,
+        "end": 1226
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:auth"
+    },
+    {
+      "id": "fn:src/routes/auth.ts:authRouter",
+      "kind": "route_handler",
+      "name": "authRouter",
+      "file": "src/routes/auth.ts",
+      "range": {
+        "start": 162,
+        "end": 1099
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:auth"
+    },
+    {
+      "id": "fn:src/routes/todos.ts:todosRouter",
+      "kind": "route_handler",
+      "name": "todosRouter",
+      "file": "src/routes/todos.ts",
+      "range": {
+        "start": 266,
+        "end": 1324
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:todos"
+    },
+    {
+      "id": "fn:src/services/authService.ts:registerUser",
+      "kind": "service",
+      "name": "registerUser",
+      "file": "src/services/authService.ts",
+      "range": {
+        "start": 357,
+        "end": 811
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:auth"
+    },
+    {
+      "id": "fn:src/services/authService.ts:loginUser",
+      "kind": "service",
+      "name": "loginUser",
+      "file": "src/services/authService.ts",
+      "range": {
+        "start": 813,
+        "end": 1312
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:auth"
+    },
+    {
+      "id": "fn:src/services/authService.ts:signToken",
+      "kind": "service",
+      "name": "signToken",
+      "file": "src/services/authService.ts",
+      "range": {
+        "start": 1314,
+        "end": 1434
+      },
+      "meta": {
+        "isExported": false
+      },
+      "cluster": "cluster:auth"
+    },
+    {
+      "id": "fn:src/services/authService.ts:verifyToken",
+      "kind": "service",
+      "name": "verifyToken",
+      "file": "src/services/authService.ts",
+      "range": {
+        "start": 1436,
+        "end": 1788
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:auth"
+    },
+    {
+      "id": "fn:src/services/todoService.ts:getTodos",
+      "kind": "service",
+      "name": "getTodos",
+      "file": "src/services/todoService.ts",
+      "range": {
+        "start": 187,
+        "end": 279
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:todos"
+    },
+    {
+      "id": "fn:src/services/todoService.ts:addTodo",
+      "kind": "service",
+      "name": "addTodo",
+      "file": "src/services/todoService.ts",
+      "range": {
+        "start": 281,
+        "end": 524
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:todos"
+    },
+    {
+      "id": "fn:src/services/todoService.ts:removeTodo",
+      "kind": "service",
+      "name": "removeTodo",
+      "file": "src/services/todoService.ts",
+      "range": {
+        "start": 526,
+        "end": 720
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:todos"
+    },
+    {
+      "id": "route:src/app.ts:GET:/health:16",
+      "kind": "route_handler",
+      "name": "GET /health",
+      "file": "src/app.ts",
+      "range": {
+        "start": 494,
+        "end": 562
+      },
+      "meta": {
+        "httpMethod": "GET",
+        "httpPath": "/health",
+        "routerName": "app"
+      },
+      "cluster": "cluster:app"
+    },
+    {
+      "id": "route:src/routes/auth.ts:POST:/auth/register:8",
+      "kind": "route_handler",
+      "name": "POST /auth/register",
+      "file": "src/routes/auth.ts",
+      "range": {
+        "start": 237,
+        "end": 658
+      },
+      "meta": {
+        "httpMethod": "POST",
+        "httpPath": "/auth/register",
+        "routerName": "router"
+      },
+      "cluster": "cluster:auth"
+    },
+    {
+      "id": "route:src/routes/auth.ts:POST:/auth/login:21",
+      "kind": "route_handler",
+      "name": "POST /auth/login",
+      "file": "src/routes/auth.ts",
+      "range": {
+        "start": 663,
+        "end": 1078
+      },
+      "meta": {
+        "httpMethod": "POST",
+        "httpPath": "/auth/login",
+        "routerName": "router"
+      },
+      "cluster": "cluster:auth"
+    },
+    {
+      "id": "route:src/routes/todos.ts:GET:/todos:10",
+      "kind": "route_handler",
+      "name": "GET /todos",
+      "file": "src/routes/todos.ts",
+      "range": {
+        "start": 342,
+        "end": 544
+      },
+      "meta": {
+        "httpMethod": "GET",
+        "httpPath": "/todos",
+        "routerName": "router"
+      },
+      "cluster": "cluster:todos"
+    },
+    {
+      "id": "route:src/routes/todos.ts:POST:/todos:20",
+      "kind": "route_handler",
+      "name": "POST /todos",
+      "file": "src/routes/todos.ts",
+      "range": {
+        "start": 549,
+        "end": 931
+      },
+      "meta": {
+        "httpMethod": "POST",
+        "httpPath": "/todos",
+        "routerName": "router"
+      },
+      "cluster": "cluster:todos"
+    },
+    {
+      "id": "route:src/routes/todos.ts:DELETE:/todos/:id:34",
+      "kind": "route_handler",
+      "name": "DELETE /todos/:id",
+      "file": "src/routes/todos.ts",
+      "range": {
+        "start": 936,
+        "end": 1303
+      },
+      "meta": {
+        "httpMethod": "DELETE",
+        "httpPath": "/todos/:id",
+        "routerName": "router"
+      },
+      "cluster": "cluster:todos"
+    }
+  ],
+  "edges": [
+    {
+      "id": "import:src/app.ts->node_modules/@types/express/index.d.ts:1",
+      "source": "file:src/app.ts",
+      "target": "file:node_modules/@types/express/index.d.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/app.ts",
+        "line": 1
+      }
+    },
+    {
+      "id": "import:src/app.ts->src/db/sqlite.ts:2",
+      "source": "file:src/app.ts",
+      "target": "file:src/db/sqlite.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/app.ts",
+        "line": 2
+      }
+    },
+    {
+      "id": "import:src/app.ts->src/db/migrations.ts:3",
+      "source": "file:src/app.ts",
+      "target": "file:src/db/migrations.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/app.ts",
+        "line": 3
+      }
+    },
+    {
+      "id": "import:src/app.ts->src/middleware/auth.ts:4",
+      "source": "file:src/app.ts",
+      "target": "file:src/middleware/auth.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/app.ts",
+        "line": 4
+      }
+    },
+    {
+      "id": "import:src/app.ts->src/middleware/error.ts:5",
+      "source": "file:src/app.ts",
+      "target": "file:src/middleware/error.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/app.ts",
+        "line": 5
+      }
+    },
+    {
+      "id": "import:src/app.ts->src/routes/auth.ts:6",
+      "source": "file:src/app.ts",
+      "target": "file:src/routes/auth.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/app.ts",
+        "line": 6
+      }
+    },
+    {
+      "id": "import:src/app.ts->src/routes/todos.ts:7",
+      "source": "file:src/app.ts",
+      "target": "file:src/routes/todos.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/app.ts",
+        "line": 7
+      }
+    },
+    {
+      "id": "mount:src/app.ts:20->fn:src/routes/auth.ts:authRouter",
+      "source": "file:src/app.ts",
+      "target": "fn:src/routes/auth.ts:authRouter",
+      "relation": "registers_route",
+      "location": {
+        "file": "src/app.ts",
+        "line": 20
+      }
+    },
+    {
+      "id": "mount:src/app.ts:21->fn:src/routes/todos.ts:todosRouter",
+      "source": "file:src/app.ts",
+      "target": "fn:src/routes/todos.ts:todosRouter",
+      "relation": "registers_route",
+      "location": {
+        "file": "src/app.ts",
+        "line": 21
+      }
+    },
+    {
+      "id": "import:src/index.ts->src/app.ts:1",
+      "source": "file:src/index.ts",
+      "target": "file:src/app.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/index.ts",
+        "line": 1
+      }
+    },
+    {
+      "id": "import:src/index.ts->src/db/sqlite.ts:2",
+      "source": "file:src/index.ts",
+      "target": "file:src/db/sqlite.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/index.ts",
+        "line": 2
+      }
+    },
+    {
+      "id": "import:src/db/migrations.ts->src/db/sqlite.ts:1",
+      "source": "file:src/db/migrations.ts",
+      "target": "file:src/db/sqlite.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/db/migrations.ts",
+        "line": 1
+      }
+    },
+    {
+      "id": "import:src/db/sqlite.ts->node_modules/@types/better-sqlite3/index.d.ts:1",
+      "source": "file:src/db/sqlite.ts",
+      "target": "file:node_modules/@types/better-sqlite3/index.d.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/db/sqlite.ts",
+        "line": 1
+      }
+    },
+    {
+      "id": "import:src/middleware/auth.ts->node_modules/@types/express/index.d.ts:1",
+      "source": "file:src/middleware/auth.ts",
+      "target": "file:node_modules/@types/express/index.d.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/middleware/auth.ts",
+        "line": 1
+      }
+    },
+    {
+      "id": "import:src/middleware/auth.ts->src/services/authService.ts:2",
+      "source": "file:src/middleware/auth.ts",
+      "target": "file:src/services/authService.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/middleware/auth.ts",
+        "line": 2
+      }
+    },
+    {
+      "id": "import:src/middleware/error.ts->node_modules/@types/express/index.d.ts:1",
+      "source": "file:src/middleware/error.ts",
+      "target": "file:node_modules/@types/express/index.d.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/middleware/error.ts",
+        "line": 1
+      }
+    },
+    {
+      "id": "import:src/middleware/error.ts->src/services/authService.ts:2",
+      "source": "file:src/middleware/error.ts",
+      "target": "file:src/services/authService.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/middleware/error.ts",
+        "line": 2
+      }
+    },
+    {
+      "id": "import:src/repos/todoRepo.ts->src/db/sqlite.ts:1",
+      "source": "file:src/repos/todoRepo.ts",
+      "target": "file:src/db/sqlite.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/repos/todoRepo.ts",
+        "line": 1
+      }
+    },
+    {
+      "id": "import:src/repos/userRepo.ts->src/db/sqlite.ts:1",
+      "source": "file:src/repos/userRepo.ts",
+      "target": "file:src/db/sqlite.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/repos/userRepo.ts",
+        "line": 1
+      }
+    },
+    {
+      "id": "import:src/routes/auth.ts->node_modules/@types/express/index.d.ts:1",
+      "source": "file:src/routes/auth.ts",
+      "target": "file:node_modules/@types/express/index.d.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/routes/auth.ts",
+        "line": 1
+      }
+    },
+    {
+      "id": "import:src/routes/auth.ts->src/db/sqlite.ts:2",
+      "source": "file:src/routes/auth.ts",
+      "target": "file:src/db/sqlite.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/routes/auth.ts",
+        "line": 2
+      }
+    },
+    {
+      "id": "import:src/routes/auth.ts->src/services/authService.ts:3",
+      "source": "file:src/routes/auth.ts",
+      "target": "file:src/services/authService.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/routes/auth.ts",
+        "line": 3
+      }
+    },
+    {
+      "id": "import:src/routes/todos.ts->node_modules/@types/express/index.d.ts:1",
+      "source": "file:src/routes/todos.ts",
+      "target": "file:node_modules/@types/express/index.d.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/routes/todos.ts",
+        "line": 1
+      }
+    },
+    {
+      "id": "import:src/routes/todos.ts->src/db/sqlite.ts:2",
+      "source": "file:src/routes/todos.ts",
+      "target": "file:src/db/sqlite.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/routes/todos.ts",
+        "line": 2
+      }
+    },
+    {
+      "id": "import:src/routes/todos.ts->src/middleware/auth.ts:3",
+      "source": "file:src/routes/todos.ts",
+      "target": "file:src/middleware/auth.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/routes/todos.ts",
+        "line": 3
+      }
+    },
+    {
+      "id": "import:src/routes/todos.ts->src/services/todoService.ts:4",
+      "source": "file:src/routes/todos.ts",
+      "target": "file:src/services/todoService.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/routes/todos.ts",
+        "line": 4
+      }
+    },
+    {
+      "id": "import:src/routes/todos.ts->src/services/authService.ts:5",
+      "source": "file:src/routes/todos.ts",
+      "target": "file:src/services/authService.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/routes/todos.ts",
+        "line": 5
+      }
+    },
+    {
+      "id": "route:src/routes/todos.ts:POST:/todos:20->fn:src/middleware/auth.ts:requireAuth:mw",
+      "source": "route:src/routes/todos.ts:POST:/todos:20",
+      "target": "fn:src/middleware/auth.ts:requireAuth",
+      "relation": "applies_middleware",
+      "location": {
+        "file": "src/routes/todos.ts",
+        "line": 20
+      }
+    },
+    {
+      "id": "import:src/services/authService.ts->node_modules/@types/bcryptjs/index.d.ts:1",
+      "source": "file:src/services/authService.ts",
+      "target": "file:node_modules/@types/bcryptjs/index.d.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/services/authService.ts",
+        "line": 1
+      }
+    },
+    {
+      "id": "import:src/services/authService.ts->node_modules/@types/jsonwebtoken/index.d.ts:2",
+      "source": "file:src/services/authService.ts",
+      "target": "file:node_modules/@types/jsonwebtoken/index.d.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/services/authService.ts",
+        "line": 2
+      }
+    },
+    {
+      "id": "import:src/services/authService.ts->src/db/sqlite.ts:3",
+      "source": "file:src/services/authService.ts",
+      "target": "file:src/db/sqlite.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/services/authService.ts",
+        "line": 3
+      }
+    },
+    {
+      "id": "import:src/services/authService.ts->src/repos/userRepo.ts:4",
+      "source": "file:src/services/authService.ts",
+      "target": "file:src/repos/userRepo.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/services/authService.ts",
+        "line": 4
+      }
+    },
+    {
+      "id": "import:src/services/todoService.ts->src/db/sqlite.ts:1",
+      "source": "file:src/services/todoService.ts",
+      "target": "file:src/db/sqlite.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/services/todoService.ts",
+        "line": 1
+      }
+    },
+    {
+      "id": "import:src/services/todoService.ts->src/repos/todoRepo.ts:2",
+      "source": "file:src/services/todoService.ts",
+      "target": "file:src/repos/todoRepo.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/services/todoService.ts",
+        "line": 2
+      }
+    },
+    {
+      "id": "import:src/services/todoService.ts->src/services/authService.ts:8",
+      "source": "file:src/services/todoService.ts",
+      "target": "file:src/services/authService.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/services/todoService.ts",
+        "line": 8
+      }
+    },
+    {
+      "id": "call:fn:src/app.ts:createApp->fn:src/db/migrations.ts:runMigrations:10",
+      "source": "fn:src/app.ts:createApp",
+      "target": "fn:src/db/migrations.ts:runMigrations",
+      "relation": "calls",
+      "location": {
+        "file": "src/app.ts",
+        "line": 10
+      }
+    },
+    {
+      "id": "call:fn:src/app.ts:createApp->fn:src/routes/auth.ts:authRouter:20",
+      "source": "fn:src/app.ts:createApp",
+      "target": "fn:src/routes/auth.ts:authRouter",
+      "relation": "calls",
+      "location": {
+        "file": "src/app.ts",
+        "line": 20
+      }
+    },
+    {
+      "id": "call:fn:src/app.ts:createApp->fn:src/routes/todos.ts:todosRouter:21",
+      "source": "fn:src/app.ts:createApp",
+      "target": "fn:src/routes/todos.ts:todosRouter",
+      "relation": "calls",
+      "location": {
+        "file": "src/app.ts",
+        "line": 21
+      }
+    },
+    {
+      "id": "call:fn:src/middleware/auth.ts:identifyUser->fn:src/services/authService.ts:verifyToken:20",
+      "source": "fn:src/middleware/auth.ts:identifyUser",
+      "target": "fn:src/services/authService.ts:verifyToken",
+      "relation": "calls",
+      "location": {
+        "file": "src/middleware/auth.ts",
+        "line": 20
+      }
+    },
+    {
+      "id": "call:fn:src/middleware/auth.ts:requireAuth->fn:src/services/authService.ts:verifyToken:37",
+      "source": "fn:src/middleware/auth.ts:requireAuth",
+      "target": "fn:src/services/authService.ts:verifyToken",
+      "relation": "calls",
+      "location": {
+        "file": "src/middleware/auth.ts",
+        "line": 37
+      }
+    },
+    {
+      "id": "call:fn:src/repos/todoRepo.ts:createTodo->fn:src/repos/todoRepo.ts:toTodo:44",
+      "source": "fn:src/repos/todoRepo.ts:createTodo",
+      "target": "fn:src/repos/todoRepo.ts:toTodo",
+      "relation": "calls",
+      "location": {
+        "file": "src/repos/todoRepo.ts",
+        "line": 44
+      }
+    },
+    {
+      "id": "call:fn:src/routes/auth.ts:authRouter->fn:src/services/authService.ts:registerUser:14",
+      "source": "fn:src/routes/auth.ts:authRouter",
+      "target": "fn:src/services/authService.ts:registerUser",
+      "relation": "calls",
+      "location": {
+        "file": "src/routes/auth.ts",
+        "line": 14
+      }
+    },
+    {
+      "id": "call:fn:src/routes/auth.ts:authRouter->fn:src/services/authService.ts:loginUser:27",
+      "source": "fn:src/routes/auth.ts:authRouter",
+      "target": "fn:src/services/authService.ts:loginUser",
+      "relation": "calls",
+      "location": {
+        "file": "src/routes/auth.ts",
+        "line": 27
+      }
+    },
+    {
+      "id": "call:fn:src/routes/todos.ts:todosRouter->fn:src/services/todoService.ts:getTodos:13",
+      "source": "fn:src/routes/todos.ts:todosRouter",
+      "target": "fn:src/services/todoService.ts:getTodos",
+      "relation": "calls",
+      "location": {
+        "file": "src/routes/todos.ts",
+        "line": 13
+      }
+    },
+    {
+      "id": "call:fn:src/routes/todos.ts:todosRouter->fn:src/services/todoService.ts:addTodo:27",
+      "source": "fn:src/routes/todos.ts:todosRouter",
+      "target": "fn:src/services/todoService.ts:addTodo",
+      "relation": "calls",
+      "location": {
+        "file": "src/routes/todos.ts",
+        "line": 27
+      }
+    },
+    {
+      "id": "call:fn:src/routes/todos.ts:todosRouter->fn:src/services/todoService.ts:removeTodo:41",
+      "source": "fn:src/routes/todos.ts:todosRouter",
+      "target": "fn:src/services/todoService.ts:removeTodo",
+      "relation": "calls",
+      "location": {
+        "file": "src/routes/todos.ts",
+        "line": 41
+      }
+    },
+    {
+      "id": "call:fn:src/services/authService.ts:registerUser->fn:src/repos/userRepo.ts:findUserByEmail:20",
+      "source": "fn:src/services/authService.ts:registerUser",
+      "target": "fn:src/repos/userRepo.ts:findUserByEmail",
+      "relation": "calls",
+      "location": {
+        "file": "src/services/authService.ts",
+        "line": 20
+      }
+    },
+    {
+      "id": "call:fn:src/services/authService.ts:registerUser->fn:src/repos/userRepo.ts:createUser:25",
+      "source": "fn:src/services/authService.ts:registerUser",
+      "target": "fn:src/repos/userRepo.ts:createUser",
+      "relation": "calls",
+      "location": {
+        "file": "src/services/authService.ts",
+        "line": 25
+      }
+    },
+    {
+      "id": "call:fn:src/services/authService.ts:registerUser->fn:src/services/authService.ts:signToken:26",
+      "source": "fn:src/services/authService.ts:registerUser",
+      "target": "fn:src/services/authService.ts:signToken",
+      "relation": "calls",
+      "location": {
+        "file": "src/services/authService.ts",
+        "line": 26
+      }
+    },
+    {
+      "id": "call:fn:src/services/authService.ts:loginUser->fn:src/repos/userRepo.ts:findUserByEmail:35",
+      "source": "fn:src/services/authService.ts:loginUser",
+      "target": "fn:src/repos/userRepo.ts:findUserByEmail",
+      "relation": "calls",
+      "location": {
+        "file": "src/services/authService.ts",
+        "line": 35
+      }
+    },
+    {
+      "id": "call:fn:src/services/authService.ts:loginUser->fn:src/services/authService.ts:signToken:43",
+      "source": "fn:src/services/authService.ts:loginUser",
+      "target": "fn:src/services/authService.ts:signToken",
+      "relation": "calls",
+      "location": {
+        "file": "src/services/authService.ts",
+        "line": 43
+      }
+    },
+    {
+      "id": "call:fn:src/services/todoService.ts:getTodos->fn:src/repos/todoRepo.ts:listTodos:11",
+      "source": "fn:src/services/todoService.ts:getTodos",
+      "target": "fn:src/repos/todoRepo.ts:listTodos",
+      "relation": "calls",
+      "location": {
+        "file": "src/services/todoService.ts",
+        "line": 11
+      }
+    },
+    {
+      "id": "call:fn:src/services/todoService.ts:addTodo->fn:src/repos/todoRepo.ts:createTodo:19",
+      "source": "fn:src/services/todoService.ts:addTodo",
+      "target": "fn:src/repos/todoRepo.ts:createTodo",
+      "relation": "calls",
+      "location": {
+        "file": "src/services/todoService.ts",
+        "line": 19
+      }
+    },
+    {
+      "id": "call:fn:src/services/todoService.ts:removeTodo->fn:src/repos/todoRepo.ts:deleteTodo:23",
+      "source": "fn:src/services/todoService.ts:removeTodo",
+      "target": "fn:src/repos/todoRepo.ts:deleteTodo",
+      "relation": "calls",
+      "location": {
+        "file": "src/services/todoService.ts",
+        "line": 23
+      }
+    }
+  ],
+  "clusters": [
+    {
+      "id": "cluster:app",
+      "name": "App",
+      "nodeIds": [
+        "fn:src/app.ts:createApp",
+        "route:src/app.ts:GET:/health:16"
+      ]
+    },
+    {
+      "id": "cluster:auth",
+      "name": "Auth",
+      "nodeIds": [
+        "fn:src/routes/auth.ts:authRouter",
+        "route:src/routes/auth.ts:POST:/auth/register:8",
+        "route:src/routes/auth.ts:POST:/auth/login:21",
+        "fn:src/services/authService.ts:registerUser",
+        "fn:src/services/authService.ts:loginUser",
+        "fn:src/services/authService.ts:signToken",
+        "fn:src/services/authService.ts:verifyToken",
+        "fn:src/repos/userRepo.ts:createUser",
+        "fn:src/repos/userRepo.ts:findUserByEmail",
+        "fn:src/repos/userRepo.ts:findUserById"
+      ]
+    },
+    {
+      "id": "cluster:todos",
+      "name": "Todos",
+      "nodeIds": [
+        "fn:src/routes/todos.ts:todosRouter",
+        "route:src/routes/todos.ts:GET:/todos:10",
+        "route:src/routes/todos.ts:POST:/todos:20",
+        "route:src/routes/todos.ts:DELETE:/todos/:id:34",
+        "fn:src/services/todoService.ts:getTodos",
+        "fn:src/services/todoService.ts:addTodo",
+        "fn:src/services/todoService.ts:removeTodo",
+        "fn:src/repos/todoRepo.ts:toTodo",
+        "fn:src/repos/todoRepo.ts:listTodos",
+        "fn:src/repos/todoRepo.ts:createTodo",
+        "fn:src/repos/todoRepo.ts:deleteTodo"
+      ]
+    },
+    {
+      "id": "cluster:middleware",
+      "name": "Middleware",
+      "nodeIds": [
+        "fn:src/middleware/auth.ts:identifyUser",
+        "fn:src/middleware/auth.ts:requireAuth",
+        "fn:src/middleware/error.ts:errorHandler"
+      ]
+    },
+    {
+      "id": "cluster:db",
+      "name": "Database",
+      "nodeIds": [
+        "fn:src/db/migrations.ts:runMigrations",
+        "fn:src/db/sqlite.ts:openDatabase"
+      ]
+    }
+  ],
+  "rootDir": "/Users/kaeyu/schema/.claude/worktrees/magical-keller-98181f/fixtures/demo-app"
+}

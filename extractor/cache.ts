@@ -4,13 +4,16 @@ import path from "node:path";
 
 const CACHE_DIR = ".schema-cache";
 
+// Hash by file path + content size + first/last byte of content.
+// Portable across machines (no mtime), invalidates on substantive change.
 export function hashRepo(rootDir: string, files: string[]): string {
   const h = crypto.createHash("sha256");
   for (const file of files.sort()) {
     const abs = path.join(rootDir, file);
     try {
-      const stat = fs.statSync(abs);
-      h.update(`${file}:${stat.size}:${stat.mtimeMs}`);
+      const buf = fs.readFileSync(abs);
+      h.update(`${file}:${buf.length}:`);
+      h.update(buf);
     } catch {
       h.update(`${file}:missing`);
     }

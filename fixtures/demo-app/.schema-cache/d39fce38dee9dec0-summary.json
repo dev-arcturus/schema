@@ -1,0 +1,3 @@
+{
+  "summary": "A small Express + TypeScript demo service backed by SQLite and protected by JWT, organized into Auth and Todos domains. The codebase follows a layered architecture with routes, services, repos, middleware, and db layers as described in the README."
+}
