@@ -118,6 +118,8 @@ type Store = {
   failureFlash: { targetId: string; until: number } | null;
   recentlyAdded: { nodeIds: Set<string>; edgeIds: Set<string>; until: number } | null;
   focusTargetIds: string[];
+  hoverHighlightIds: string[];
+  setHoverHighlight: (ids: string[]) => void;
 
   visibleKinds: Partial<Record<NodeKind, boolean>>;
   toggleKind: (kind: NodeKind) => void;
@@ -170,6 +172,8 @@ export const useStore = create<Store>((set, get) => ({
   failureFlash: null,
   recentlyAdded: null,
   focusTargetIds: [],
+  hoverHighlightIds: [],
+  setHoverHighlight: (ids) => set({ hoverHighlightIds: ids }),
 
   visibleKinds: {
     route_handler: true,

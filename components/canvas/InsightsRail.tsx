@@ -50,7 +50,11 @@ export function InsightsRail() {
           {visible.map((insight) => (
             <div
               key={insight.id}
-              className="group rounded-md border border-canvas-border bg-canvas-panel/90 p-3 shadow-panel backdrop-blur"
+              onMouseEnter={() =>
+                useStore.getState().setHoverHighlight(insight.targetIds)
+              }
+              onMouseLeave={() => useStore.getState().setHoverHighlight([])}
+              className="group rounded-md border border-canvas-border bg-canvas-panel/90 p-3 shadow-panel backdrop-blur transition-colors hover:border-amber-300/40"
             >
               <div className="flex items-start gap-2">
                 <span

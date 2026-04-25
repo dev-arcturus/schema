@@ -149,6 +149,16 @@
   animation: schema-focus-pulse 1600ms ease-in-out infinite;
 }
 
+.schema-node-hover > div {
+  box-shadow: 0 0 0 2px hsl(45 95% 60% / 0.6), 0 4px 16px hsl(220 14% 2% / 0.6);
+  transition: box-shadow 120ms ease-out;
+}
+
+.schema-node-dim {
+  opacity: 0.3;
+  transition: opacity 200ms ease-out;
+}
+
 @layer utilities {
   .scrollbar-none::-webkit-scrollbar {
     display: none;

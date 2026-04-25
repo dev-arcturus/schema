@@ -14,6 +14,8 @@ import { SearchBar } from "@/components/canvas/SearchBar";
 import { KindFilter } from "@/components/canvas/KindFilter";
 import { CommandBar } from "@/components/canvas/CommandBar";
 import { PlanPanel } from "@/components/canvas/PlanPanel";
+import { PlanProgress } from "@/components/canvas/PlanProgress";
+import { CheatSheet } from "@/components/canvas/CheatSheet";
 import { InsightsRail } from "@/components/canvas/InsightsRail";
 import { RepoSummary } from "@/components/canvas/RepoSummary";
 
@@ -42,8 +44,10 @@ export default function Page() {
           <KindFilter />
           <CommandBar />
           <PlanPanel />
+          <PlanProgress />
           <InsightsRail />
           <RepoSummary />
+          <CheatSheet />
           <Toast />
         </>
       ) : (

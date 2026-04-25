@@ -41,6 +41,7 @@ function GraphCanvasInner() {
   const failureFlash = useStore((s) => s.failureFlash);
   const recentlyAdded = useStore((s) => s.recentlyAdded);
   const focusTargetIds = useStore((s) => s.focusTargetIds);
+  const hoverHighlightIds = useStore((s) => s.hoverHighlightIds);
   const visibleKinds = useStore((s) => s.visibleKinds);
   const selectNode = useStore((s) => s.selectNode);
   const selectEdge = useStore((s) => s.selectEdge);
@@ -92,6 +93,18 @@ function GraphCanvasInner() {
         recentlyAdded.until > Date.now()
       );
       const isFocus = focusTargetIds.includes(n.id);
+      const isHovered = hoverHighlightIds.includes(n.id);
+      const dimmed =
+        hoverHighlightIds.length > 0 && !isHovered;
+      const cls = isNew
+        ? "schema-node-new"
+        : isFocus
+          ? "schema-node-focus"
+          : isHovered
+            ? "schema-node-hover"
+            : dimmed
+              ? "schema-node-dim"
+              : "";
       out.push({
         id: n.id,
         type: isRoute ? "route" : "function",
@@ -99,11 +112,19 @@ function GraphCanvasInner() {
         data: { node: n, failed, isNew, isFocus },
         selected: selection?.kind === "node" && selection.id === n.id,
         draggable: true,
-        className: isNew ? "schema-node-new" : isFocus ? "schema-node-focus" : "",
+        className: cls,
       });
     }
     return out;
-  }, [filteredGraph, layout, selection, failureFlash, recentlyAdded, focusTargetIds]);
+  }, [
+    filteredGraph,
+    layout,
+    selection,
+    failureFlash,
+    recentlyAdded,
+    focusTargetIds,
+    hoverHighlightIds,
+  ]);
 
   const flowEdges: Edge[] = useMemo(() => {
     if (!filteredGraph) return [];
