@@ -1,0 +1,97 @@
+{
+  "insights": [
+    {
+      "id": "insight-1",
+      "title": "GET /todos missing requireAuth middleware",
+      "rationale": "POST /todos and DELETE /todos/:id are auth-protected but GET /todos is not, allowing unauthenticated users to read any user's todo list.",
+      "severity": "high",
+      "targetIds": [
+        "route:src/routes/todos.ts:GET:/todos:10",
+        "route:src/routes/todos.ts:POST:/todos:20",
+        "route:src/routes/todos.ts:DELETE:/todos/:id:34"
+      ],
+      "suggestedPrompt": "Add requireAuth middleware to GET /todos and DELETE /todos/:id to match POST /todos auth protection."
+    },
+    {
+      "id": "insight-2",
+      "title": "DELETE /todos/:id missing requireAuth middleware",
+      "rationale": "DELETE /todos/:id has no applies_middleware edge to requireAuth, unlike POST /todos. Unauthenticated callers can delete arbitrary todos.",
+      "severity": "high",
+      "targetIds": [
+        "route:src/routes/todos.ts:DELETE:/todos/:id:34",
+        "fn:src/middleware/auth.ts:requireAuth"
+      ],
+      "suggestedPrompt": "Apply requireAuth middleware to DELETE /todos/:id route."
+    },
+    {
+      "id": "insight-3",
+      "title": "GET /health has no error handling middleware wired",
+      "rationale": "errorHandler exists but there is no edge from the health route or app bootstrap confirming it is applied globally, leaving unhandled errors possible on this route.",
+      "severity": "medium",
+      "targetIds": [
+        "route:src/app.ts:GET:/health:16",
+        "fn:src/middleware/error.ts:errorHandler"
+      ],
+      "suggestedPrompt": "Wire errorHandler middleware globally in createApp after all route registrations."
+    },
+    {
+      "id": "insight-4",
+      "title": "verifyToken called by both identifyUser and requireAuth — cache or deduplicate",
+      "rationale": "verifyToken (likely a JWT decode+verify) is invoked independently by two middleware functions on every request, doubling CPU and potentially I/O cost per request.",
+      "severity": "medium",
+      "targetIds": [
+        "fn:src/middleware/auth.ts:identifyUser",
+        "fn:src/middleware/auth.ts:requireAuth",
+        "fn:src/services/authService.ts:verifyToken"
+      ],
+      "suggestedPrompt": "Add request-scoped caching to verifyToken so the result is computed once per request and reused by both identifyUser and requireAuth."
+    },
+    {
+      "id": "insight-5",
+      "title": "signToken is a crypto utility living inside authService — extract it",
+      "rationale": "signToken and verifyToken are pure JWT utilities but are co-located with business-logic services (registerUser, loginUser), making them hard to reuse and test in isolation.",
+      "severity": "low",
+      "targetIds": [
+        "fn:src/services/authService.ts:signToken",
+        "fn:src/services/authService.ts:verifyToken"
+      ],
+      "suggestedPrompt": "Extract signToken and verifyToken into a dedicated src/services/tokenService.ts module."
+    },
+    {
+      "id": "insight-6",
+      "title": "toTodo row-mapper utility is buried inside todoRepo — extract it",
+      "rationale": "toTodo is a data-transformation helper, not a data-access function. Keeping it in todoRepo conflates mapping logic with DB access, hindering reuse and unit testing.",
+      "severity": "low",
+      "targetIds": [
+        "fn:src/repos/todoRepo.ts:toTodo",
+        "fn:src/repos/todoRepo.ts:createTodo"
+      ],
+      "suggestedPrompt": "Extract toTodo into src/models/todo.ts or a dedicated mapper file and import it back into todoRepo."
+    },
+    {
+      "id": "insight-7",
+      "title": "findUserByEmail called by both registerUser and loginUser without caching",
+      "rationale": "findUserByEmail hits the DB on every auth operation. A short-lived cache (e.g. per-request or TTL-based) would reduce redundant lookups during high-traffic login/register flows.",
+      "severity": "low",
+      "targetIds": [
+        "fn:src/repos/userRepo.ts:findUserByEmail",
+        "fn:src/services/authService.ts:registerUser",
+        "fn:src/services/authService.ts:loginUser"
+      ],
+      "suggestedPrompt": "Wrap findUserByEmail with a short TTL cache to avoid duplicate DB hits within the same auth flow."
+    },
+    {
+      "id": "insight-8",
+      "title": "createApp is a high-fanout bootstrap hub — consider splitting concerns",
+      "rationale": "createApp calls runMigrations, registers routers, and presumably wires middleware — mixing DB lifecycle, routing, and middleware setup in one function, making it a fragile change magnet.",
+      "severity": "medium",
+      "targetIds": [
+        "fn:src/app.ts:createApp",
+        "fn:src/db/migrations.ts:runMigrations",
+        "fn:src/routes/auth.ts:authRouter",
+        "fn:src/routes/todos.ts:todosRouter"
+      ],
+      "suggestedPrompt": "Split createApp into separate initDb and registerRoutes helpers called from a thin createApp orchestrator."
+    }
+  ]
+}
