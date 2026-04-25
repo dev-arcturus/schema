@@ -123,6 +123,15 @@ type Store = {
   setHoverHighlight: (ids: string[]) => void;
   sessionStats: { prompts: number; stepsApplied: number; filesChanged: number };
 
+  rightTab: "inspector" | "insights" | "rules" | "history";
+  setRightTab: (tab: "inspector" | "insights" | "rules" | "history") => void;
+
+  commandBarFocused: boolean;
+  setCommandBarFocused: (focused: boolean) => void;
+
+  rightPanelWidth: number;
+  setRightPanelWidth: (width: number) => void;
+
   visibleKinds: Partial<Record<NodeKind, boolean>>;
   toggleKind: (kind: NodeKind) => void;
 
@@ -195,6 +204,27 @@ export const useStore = create<Store>((set, get) => ({
   hoverHighlightIds: [],
   setHoverHighlight: (ids) => set({ hoverHighlightIds: ids }),
   sessionStats: { prompts: 0, stepsApplied: 0, filesChanged: 0 },
+
+  rightTab: "insights",
+  setRightTab: (tab) => set({ rightTab: tab }),
+
+  commandBarFocused: false,
+  setCommandBarFocused: (focused) => set({ commandBarFocused: focused }),
+
+  rightPanelWidth: typeof window !== "undefined"
+    ? Number(localStorage.getItem("schema:rightPanelWidth") ?? 360)
+    : 360,
+  setRightPanelWidth: (width) => {
+    const clamped = Math.min(720, Math.max(260, width));
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("schema:rightPanelWidth", String(clamped));
+      } catch {
+        // ignore
+      }
+    }
+    set({ rightPanelWidth: clamped });
+  },
 
   rules: [],
   violations: [],
@@ -736,6 +766,7 @@ export const useStore = create<Store>((set, get) => ({
       selection: { kind: "node", id },
       pendingOp: null,
       applyState: { phase: "idle" },
+      rightTab: "inspector",
     });
     void fetchApplicableOps();
   },
@@ -745,6 +776,7 @@ export const useStore = create<Store>((set, get) => ({
       selection: { kind: "edge", id },
       pendingOp: null,
       applyState: { phase: "idle" },
+      rightTab: "inspector",
     });
     void fetchApplicableOps();
   },

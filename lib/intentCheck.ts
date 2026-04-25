@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { anthropic } from "@ai-sdk/anthropic";
 import { generateObject } from "ai";
 import { z } from "zod";
@@ -11,6 +12,18 @@ export type IntentCheckResult = z.infer<typeof intentSchema>;
 
 const MAX_DIFF = 4000;
 
+// In-memory cache for intent checks within a single dev-server session.
+// Keyed by hash(intent + diff[:1500]). Avoids re-paying Haiku for identical
+// step results during repeated demos.
+const intentCache = new Map<string, IntentCheckResult>();
+function intentKey(intent: string, diff: string): string {
+  return crypto
+    .createHash("sha256")
+    .update(intent + "|" + diff.slice(0, 1500))
+    .digest("hex")
+    .slice(0, 16);
+}
+
 export async function intentCheck({
   userIntent,
   stepDescription,
@@ -23,6 +36,9 @@ export async function intentCheck({
   if (!process.env.ANTHROPIC_API_KEY) {
     return { matches: true, reason: "skipped (no api key)" };
   }
+  const key = intentKey(userIntent, diff);
+  const cached = intentCache.get(key);
+  if (cached) return cached;
   try {
     const truncated = diff.length > MAX_DIFF ? diff.slice(0, MAX_DIFF) + "\n…(truncated)" : diff;
     const { object } = await generateObject({
@@ -42,6 +58,7 @@ export async function intentCheck({
         truncated,
       ].join("\n"),
     });
+    intentCache.set(key, object);
     return object;
   } catch (err) {
     return {

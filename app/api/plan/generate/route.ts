@@ -1,9 +1,24 @@
+import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { anthropic } from "@ai-sdk/anthropic";
 import { generateObject, streamObject } from "ai";
 import { planSchema, type Plan } from "@/lib/planSchema";
 import { OPS_REGISTRY_DESCRIPTION } from "@/lib/opsRegistryDescription";
+import { readCache, writeCache } from "@/extractor/cache";
+import { resolveRepo } from "@/lib/resolveRepo";
 import type { Graph } from "@/extractor/types";
+
+function planHash(prompt: string, graph: Graph): string {
+  const compact = graph.nodes
+    .map((n) => `${n.id}:${n.kind}`)
+    .sort()
+    .join(",");
+  return crypto
+    .createHash("sha256")
+    .update(prompt + "|" + compact)
+    .digest("hex")
+    .slice(0, 16);
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,12 +51,39 @@ export async function POST(req: Request) {
       );
     }
 
+    // Cache hit short-circuit (no streaming, no Anthropic round-trip)
+    const cacheKey = `plan-${planHash(body.prompt, body.graph)}`;
+    const repoPathInput = body.graph.rootDir;
+    let cachedPlan: { plan: Plan } | null = null;
+    if (repoPathInput) {
+      try {
+        const resolved = await resolveRepo({ source: "local", value: repoPathInput });
+        cachedPlan = readCache<{ plan: Plan }>(resolved.rootDir, cacheKey);
+      } catch {
+        cachedPlan = null;
+      }
+    }
+    if (cachedPlan?.plan) {
+      if (body.stream) {
+        return cachedStreamingResponse(cachedPlan.plan);
+      }
+      return NextResponse.json({ plan: cachedPlan.plan });
+    }
+
     if (body.stream) {
-      return streamingResponse(body);
+      return streamingResponse(body, cacheKey);
     }
 
     const plan = await generatePlan(body.prompt, body.graph, body.history ?? []);
     const sanitized = sanitizePlan(plan, body.graph);
+    if (repoPathInput) {
+      try {
+        const resolved = await resolveRepo({ source: "local", value: repoPathInput });
+        writeCache(resolved.rootDir, cacheKey, { plan: sanitized });
+      } catch {
+        // ignore
+      }
+    }
     return NextResponse.json({ plan: sanitized });
   } catch (err) {
     return NextResponse.json(
@@ -51,7 +93,7 @@ export async function POST(req: Request) {
   }
 }
 
-function streamingResponse(body: Body): Response {
+function streamingResponse(body: Body, cacheKey: string): Response {
   const { systemPrompt, userPrompt } = buildPrompts(
     body.prompt,
     body.graph,
@@ -68,6 +110,7 @@ function streamingResponse(body: Body): Response {
   });
 
   const enc = new TextEncoder();
+  const repoPath = body.graph.rootDir;
   const readable = new ReadableStream({
     async start(controller) {
       try {
@@ -81,6 +124,14 @@ function streamingResponse(body: Body): Response {
         controller.enqueue(
           enc.encode(JSON.stringify({ type: "final", plan: sanitized }) + "\n"),
         );
+        if (repoPath) {
+          try {
+            const resolved = await resolveRepo({ source: "local", value: repoPath });
+            writeCache(resolved.rootDir, cacheKey, { plan: sanitized });
+          } catch {
+            // ignore
+          }
+        }
       } catch (err) {
         controller.enqueue(
           enc.encode(
@@ -96,6 +147,27 @@ function streamingResponse(body: Body): Response {
     },
   });
 
+  return new Response(readable, {
+    headers: {
+      "content-type": "application/x-ndjson",
+      "cache-control": "no-store",
+    },
+  });
+}
+
+function cachedStreamingResponse(plan: Plan): Response {
+  const enc = new TextEncoder();
+  const readable = new ReadableStream({
+    start(controller) {
+      controller.enqueue(
+        enc.encode(JSON.stringify({ type: "partial", plan }) + "\n"),
+      );
+      controller.enqueue(
+        enc.encode(JSON.stringify({ type: "final", plan }) + "\n"),
+      );
+      controller.close();
+    },
+  });
   return new Response(readable, {
     headers: {
       "content-type": "application/x-ndjson",

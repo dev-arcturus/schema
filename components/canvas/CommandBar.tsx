@@ -20,7 +20,8 @@ export function CommandBar() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [draft, setDraft] = useState("");
-  const [focused, setFocused] = useState(false);
+  const focused = useStore((s) => s.commandBarFocused);
+  const setFocused = useStore((s) => s.setCommandBarFocused);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -49,7 +50,7 @@ export function CommandBar() {
     planState.phase === "done";
 
   const showQuickPrompts =
-    planState.phase === "idle" && draft.trim().length === 0;
+    focused && planState.phase === "idle" && draft.trim().length === 0;
 
   return (
     <div className="pointer-events-auto absolute bottom-4 left-1/2 z-30 flex w-[600px] max-w-[calc(100%-340px)] -translate-x-1/2 flex-col gap-2">
