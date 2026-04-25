@@ -48,6 +48,28 @@ function GraphCanvasInner() {
   const clearSelection = useStore((s) => s.clearSelection);
   const rf = useReactFlow();
 
+  const planState = useStore((s) => s.planState);
+
+  const ghostEdges = useMemo(() => {
+    if (!graph) return [] as { id: string; source: string; target: string }[];
+    if (planState.phase !== "preview") return [];
+    const edges: { id: string; source: string; target: string }[] = [];
+    for (const step of planState.plan.steps) {
+      if (step.kind !== "op") continue;
+      if (step.opName === "addMiddleware") {
+        const mw = step.params as { middleware?: string; middlewareFile?: string };
+        if (mw.middleware && mw.middlewareFile) {
+          edges.push({
+            id: `ghost:mw:${step.targetId}->${mw.middleware}`,
+            source: step.targetId,
+            target: `fn:${mw.middlewareFile}:${mw.middleware}`,
+          });
+        }
+      }
+    }
+    return edges;
+  }, [graph, planState]);
+
   const filteredGraph = useMemo(() => {
     if (!graph) return null;
     const visibleSet = new Set(
@@ -113,6 +135,8 @@ function GraphCanvasInner() {
         selected: selection?.kind === "node" && selection.id === n.id,
         draggable: true,
         className: cls,
+        width: 220,
+        height: 60,
       });
     }
     return out;
@@ -166,6 +190,32 @@ function GraphCanvasInner() {
       });
   }, [filteredGraph, selection, recentlyAdded]);
 
+  const allEdges: Edge[] = useMemo(() => {
+    const known = new Set((filteredGraph?.nodes ?? []).map((n) => n.id));
+    const ghosts: Edge[] = ghostEdges
+      .filter((g) => known.has(g.source) && known.has(g.target))
+      .map((g) => ({
+        id: g.id,
+        source: g.source,
+        target: g.target,
+        type: "smoothstep",
+        animated: true,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 18,
+          height: 18,
+          color: "hsl(214 95% 67%)",
+        },
+        style: {
+          stroke: "hsl(214 95% 67%)",
+          strokeWidth: 1.5,
+          strokeDasharray: "2 5",
+          opacity: 0.85,
+        },
+      }));
+    return [...flowEdges, ...ghosts];
+  }, [flowEdges, ghostEdges, filteredGraph]);
+
   // Force a redraw shortly after a failure flash so it can clear
   useEffect(() => {
     if (!failureFlash) return;
@@ -211,7 +261,7 @@ function GraphCanvasInner() {
     <>
       <ReactFlow
         nodes={flowNodes}
-        edges={flowEdges}
+        edges={allEdges}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.15, maxZoom: 1.0, minZoom: 0.3 }}
@@ -242,9 +292,9 @@ function GraphCanvasInner() {
           pannable
           zoomable
           bgColor="hsl(220 14% 6%)"
-          maskColor="hsl(220 14% 4% / 0.7)"
-          maskStrokeColor="hsl(220 14% 18%)"
-          maskStrokeWidth={1}
+          maskColor="hsl(220 14% 4% / 0.55)"
+          maskStrokeColor="hsl(220 14% 22%)"
+          maskStrokeWidth={2}
           nodeColor={(n) => {
             const k = (n.data as { node?: { kind?: string } })?.node?.kind;
             switch (k) {
@@ -260,8 +310,10 @@ function GraphCanvasInner() {
                 return "hsl(220 14% 35%)";
             }
           }}
-          nodeStrokeColor="transparent"
-          nodeStrokeWidth={0}
+          nodeStrokeColor="hsl(220 14% 8%)"
+          nodeStrokeWidth={1}
+          nodeBorderRadius={2}
+          ariaLabel="minimap"
         />
       </ReactFlow>
     </>
