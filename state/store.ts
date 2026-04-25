@@ -126,11 +126,13 @@ type Store = {
 
   planState: PlanState;
   chatHistory: ConversationTurn[];
+  lastPrompt: string | null;
   insights: Insight[];
   insightsLoading: boolean;
   submitPrompt: (prompt: string) => Promise<void>;
   approvePlan: () => Promise<void>;
   cancelPlan: () => void;
+  retryLastPrompt: () => Promise<void>;
   loadInsights: () => Promise<void>;
 
   setRepoSource: (source: "local" | "github") => void;
@@ -194,13 +196,17 @@ export const useStore = create<Store>((set, get) => ({
 
   planState: { phase: "idle" },
   chatHistory: [],
+  lastPrompt: null,
   insights: [],
   insightsLoading: false,
 
   async submitPrompt(prompt) {
     const { graph, chatHistory } = get();
     if (!graph || !prompt.trim()) return;
-    set({ planState: { phase: "thinking", prompt, partial: null } });
+    set({
+      planState: { phase: "thinking", prompt, partial: null },
+      lastPrompt: prompt,
+    });
     try {
       const res = await fetch("/api/plan/generate", {
         method: "POST",
@@ -269,6 +275,7 @@ export const useStore = create<Store>((set, get) => ({
           error: err instanceof Error ? err.message : "plan failed",
           filesChanged: [],
         },
+        lastPrompt: prompt,
       });
     }
   },
@@ -479,6 +486,16 @@ export const useStore = create<Store>((set, get) => ({
 
   cancelPlan() {
     set({ planState: { phase: "idle" }, focusTargetIds: [] });
+  },
+
+  async retryLastPrompt() {
+    const last = get().lastPrompt;
+    if (!last) return;
+    set({
+      applyState: { phase: "idle" },
+      planState: { phase: "idle" },
+    });
+    await get().submitPrompt(last);
   },
 
   async loadInsights() {
