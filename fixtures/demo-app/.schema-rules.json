@@ -1,0 +1,39 @@
+[
+  {
+    "id": "rule:routes-must-auth",
+    "title": "Resource routes must apply requireAuth",
+    "prompt": "Every route under /todos must apply the requireAuth middleware",
+    "predicate": {
+      "type": "must_have_edge",
+      "source": {
+        "kind": "route_handler",
+        "httpPathContains": "/todos"
+      },
+      "target": {
+        "name": "requireAuth"
+      },
+      "relation": "applies_middleware"
+    },
+    "severity": "error",
+    "createdAt": 1700000000000,
+    "enabled": true
+  },
+  {
+    "id": "rule:routes-not-data",
+    "title": "Routes must not call data layer directly",
+    "prompt": "Route handlers should not call data_access functions directly; go through services",
+    "predicate": {
+      "type": "no_edge",
+      "source": {
+        "kind": "route_handler"
+      },
+      "target": {
+        "kind": "data_access"
+      },
+      "relation": "calls"
+    },
+    "severity": "warn",
+    "createdAt": 1700000000001,
+    "enabled": true
+  }
+]

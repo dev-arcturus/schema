@@ -52,7 +52,7 @@ export function CommandBar() {
     planState.phase === "idle" && draft.trim().length === 0;
 
   return (
-    <div className="pointer-events-auto absolute bottom-4 left-1/2 z-30 flex w-[640px] max-w-[calc(100%-32px)] -translate-x-1/2 flex-col gap-2">
+    <div className="pointer-events-auto absolute bottom-4 left-1/2 z-30 flex w-[600px] max-w-[calc(100%-340px)] -translate-x-1/2 flex-col gap-2">
       {showQuickPrompts ? (
         <div className="flex flex-wrap items-center justify-center gap-1.5">
           {QUICK_PROMPTS.map((p) => (

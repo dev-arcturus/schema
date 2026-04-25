@@ -4,6 +4,7 @@ import { create } from "zustand";
 import type { Graph, GraphEdge, GraphNode, NodeKind } from "@/extractor/types";
 import type { OpDescriptor, OpGraphPatch } from "@/ops/types";
 import type { Plan, StepResult } from "@/lib/planSchema";
+import type { Rule, Violation } from "@/lib/rules";
 
 export type Insight = {
   id: string;
@@ -125,6 +126,22 @@ type Store = {
   visibleKinds: Partial<Record<NodeKind, boolean>>;
   toggleKind: (kind: NodeKind) => void;
 
+  rules: Rule[];
+  violations: Violation[];
+  rulesLoading: boolean;
+  ruleCompileError: string | null;
+  loadRules: () => Promise<void>;
+  addRuleFromPrompt: (prompt: string, severity?: Rule["severity"]) => Promise<void>;
+  removeRule: (id: string) => Promise<void>;
+  toggleRuleEnabled: (id: string, enabled: boolean) => Promise<void>;
+  applyRuleFix: (violation: Violation) => Promise<void>;
+
+  coveredNodeIds: Set<string>;
+  testFileCount: number;
+  coverageVisible: boolean;
+  toggleCoverage: () => void;
+  loadCoverage: () => Promise<void>;
+
   planState: PlanState;
   chatHistory: ConversationTurn[];
   lastPrompt: string | null;
@@ -178,6 +195,133 @@ export const useStore = create<Store>((set, get) => ({
   hoverHighlightIds: [],
   setHoverHighlight: (ids) => set({ hoverHighlightIds: ids }),
   sessionStats: { prompts: 0, stepsApplied: 0, filesChanged: 0 },
+
+  rules: [],
+  violations: [],
+  rulesLoading: false,
+  ruleCompileError: null,
+
+  coveredNodeIds: new Set(),
+  testFileCount: 0,
+  coverageVisible: false,
+  toggleCoverage: () => {
+    set((s) => ({ coverageVisible: !s.coverageVisible }));
+  },
+  async loadCoverage() {
+    const { resolvedRepoPath, graph } = get();
+    if (!graph) return;
+    try {
+      const res = await fetch("/api/coverage", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ repoPath: resolvedRepoPath, graph }),
+      });
+      const data = await res.json();
+      set({
+        coveredNodeIds: new Set<string>(
+          Array.isArray(data.coveredNodeIds) ? data.coveredNodeIds : [],
+        ),
+        testFileCount: typeof data.testFileCount === "number" ? data.testFileCount : 0,
+      });
+    } catch {
+      // ignore
+    }
+  },
+
+  async loadRules() {
+    const { resolvedRepoPath, graph } = get();
+    if (!graph) return;
+    set({ rulesLoading: true });
+    try {
+      const res = await fetch("/api/rules/violations", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ repoPath: resolvedRepoPath, graph }),
+      });
+      const data = await res.json();
+      set({
+        rules: Array.isArray(data.rules) ? data.rules : [],
+        violations: Array.isArray(data.violations) ? data.violations : [],
+        rulesLoading: false,
+      });
+    } catch {
+      set({ rulesLoading: false });
+    }
+  },
+
+  async addRuleFromPrompt(prompt, severity = "warn") {
+    const { resolvedRepoPath } = get();
+    set({ ruleCompileError: null, rulesLoading: true });
+    try {
+      const compileRes = await fetch("/api/rules/compile", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const compiled = await compileRes.json();
+      if (!compileRes.ok || !compiled?.predicate) {
+        throw new Error(compiled?.error ?? "compile failed");
+      }
+      const rule: Rule = {
+        id: `rule:${Date.now().toString(36)}`,
+        title: compiled.title ?? prompt.slice(0, 80),
+        prompt,
+        predicate: compiled.predicate,
+        severity,
+        createdAt: Date.now(),
+        enabled: true,
+      };
+      const saveRes = await fetch("/api/rules/save", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "add",
+          repoPath: resolvedRepoPath,
+          rule,
+        }),
+      });
+      if (!saveRes.ok) {
+        const err = await saveRes.json().catch(() => ({}));
+        throw new Error(err?.error ?? "save failed");
+      }
+      await get().loadRules();
+    } catch (err) {
+      set({
+        ruleCompileError: err instanceof Error ? err.message : "rule failed",
+        rulesLoading: false,
+      });
+    }
+  },
+
+  async removeRule(id) {
+    const { resolvedRepoPath } = get();
+    await fetch("/api/rules/save", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "remove", repoPath: resolvedRepoPath, id }),
+    });
+    await get().loadRules();
+  },
+
+  async toggleRuleEnabled(id, enabled) {
+    const { resolvedRepoPath } = get();
+    await fetch("/api/rules/save", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        action: "toggle",
+        repoPath: resolvedRepoPath,
+        id,
+        enabled,
+      }),
+    });
+    await get().loadRules();
+  },
+
+  async applyRuleFix(violation) {
+    const prompt = violation.suggestedPrompt ?? `Fix: ${violation.ruleTitle}`;
+    await get().submitPrompt(prompt);
+  },
 
   visibleKinds: {
     route_handler: true,
@@ -414,6 +558,8 @@ export const useStore = create<Store>((set, get) => ({
               workingGraph,
               data.graphPatch as OpGraphPatch,
             );
+            // re-evaluate rules whenever graph changes
+            void get().loadRules();
             const patch = data.graphPatch as OpGraphPatch;
             const newNodeIds = new Set<string>(
               (patch.addNodes ?? []).map((n) => n.id),
@@ -571,8 +717,12 @@ export const useStore = create<Store>((set, get) => ({
         chatHistory: [],
         insights: [],
         sessionStats: { prompts: 0, stepsApplied: 0, filesChanged: 0 },
+        rules: [],
+        violations: [],
       });
       void get().loadInsights();
+      void get().loadRules();
+      void get().loadCoverage();
     } catch (err) {
       set({
         loading: false,

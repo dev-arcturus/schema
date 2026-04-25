@@ -42,6 +42,14 @@ function GraphCanvasInner() {
   const recentlyAdded = useStore((s) => s.recentlyAdded);
   const focusTargetIds = useStore((s) => s.focusTargetIds);
   const hoverHighlightIds = useStore((s) => s.hoverHighlightIds);
+  const violations = useStore((s) => s.violations);
+  const violationNodeIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const v of violations) for (const id of v.nodeIds) s.add(id);
+    return s;
+  }, [violations]);
+  const coveredNodeIds = useStore((s) => s.coveredNodeIds);
+  const coverageVisible = useStore((s) => s.coverageVisible);
   const visibleKinds = useStore((s) => s.visibleKinds);
   const selectNode = useStore((s) => s.selectNode);
   const selectEdge = useStore((s) => s.selectEdge);
@@ -116,22 +124,30 @@ function GraphCanvasInner() {
       );
       const isFocus = focusTargetIds.includes(n.id);
       const isHovered = hoverHighlightIds.includes(n.id);
+      const isViolating = violationNodeIds.has(n.id);
+      const isUncovered =
+        coverageVisible && !coveredNodeIds.has(n.id) && n.kind !== "external";
       const dimmed =
         hoverHighlightIds.length > 0 && !isHovered;
-      const cls = isNew
+      const baseCls = isNew
         ? "schema-node-new"
         : isFocus
           ? "schema-node-focus"
           : isHovered
             ? "schema-node-hover"
-            : dimmed
-              ? "schema-node-dim"
-              : "";
+            : isViolating
+              ? "schema-node-violation"
+              : dimmed
+                ? "schema-node-dim"
+                : "";
+      const cls = isUncovered
+        ? `${baseCls} schema-node-uncovered`.trim()
+        : baseCls;
       out.push({
         id: n.id,
         type: isRoute ? "route" : "function",
         position: { x: pos.x, y: pos.y },
-        data: { node: n, failed, isNew, isFocus },
+        data: { node: n, failed, isNew, isFocus, isViolating, isUncovered },
         selected: selection?.kind === "node" && selection.id === n.id,
         draggable: true,
         className: cls,
@@ -148,6 +164,9 @@ function GraphCanvasInner() {
     recentlyAdded,
     focusTargetIds,
     hoverHighlightIds,
+    violationNodeIds,
+    coveredNodeIds,
+    coverageVisible,
   ]);
 
   const flowEdges: Edge[] = useMemo(() => {

@@ -6,10 +6,12 @@ node_modules
 *.log
 .DS_Store
 .vitest
-coverage
+/coverage
 /snapshots
 /.schema-cache
+/.schema-rules.json
 .schema-clones
 tsconfig.tsbuildinfo
 fixtures/**/node_modules
-# fixtures/demo-app/.schema-cache IS committed (pre-warm for instant demo extract)
+# fixtures/demo-app/.schema-cache and .schema-rules.json ARE committed
+# (pre-warm + starter rules for the demo)

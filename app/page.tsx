@@ -9,15 +9,12 @@ import { EmptyState } from "@/components/canvas/EmptyState";
 import { Shortcuts } from "@/components/canvas/Shortcuts";
 import { StatusPill } from "@/components/canvas/StatusPill";
 import { Toast } from "@/components/canvas/Toast";
-import { ReadmePeek } from "@/components/canvas/ReadmePeek";
-import { SearchBar } from "@/components/canvas/SearchBar";
-import { KindFilter } from "@/components/canvas/KindFilter";
 import { CommandBar } from "@/components/canvas/CommandBar";
 import { PlanPanel } from "@/components/canvas/PlanPanel";
 import { PlanProgress } from "@/components/canvas/PlanProgress";
 import { CheatSheet } from "@/components/canvas/CheatSheet";
-import { InsightsRail } from "@/components/canvas/InsightsRail";
-import { RepoSummary } from "@/components/canvas/RepoSummary";
+import { LeftSidebar } from "@/components/canvas/LeftSidebar";
+import { TopToolbar } from "@/components/canvas/TopToolbar";
 
 export default function Page() {
   const graph = useStore((s) => s.graph);
@@ -39,14 +36,11 @@ export default function Page() {
       {graph ? (
         <>
           <GraphCanvas />
-          <ReadmePeek />
-          <SearchBar />
-          <KindFilter />
+          <TopToolbar />
+          <LeftSidebar />
           <CommandBar />
           <PlanPanel />
           <PlanProgress />
-          <InsightsRail />
-          <RepoSummary />
           <CheatSheet />
           <Toast />
         </>

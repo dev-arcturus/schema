@@ -159,6 +159,39 @@
   transition: opacity 200ms ease-out;
 }
 
+.schema-node-violation > div {
+  box-shadow: 0 0 0 1px hsl(0 75% 60% / 0.6), 0 4px 12px hsl(220 14% 2% / 0.5);
+}
+
+.schema-node-violation > div::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(0 75% 60%);
+  box-shadow: 0 0 0 2px hsl(220 14% 7%);
+}
+
+.schema-node-uncovered > div {
+  opacity: 0.55;
+  filter: grayscale(0.6);
+}
+
+.schema-node-uncovered > div::before {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  left: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(220 14% 25%);
+  box-shadow: 0 0 0 2px hsl(220 14% 7%);
+}
+
 @layer utilities {
   .scrollbar-none::-webkit-scrollbar {
     display: none;
