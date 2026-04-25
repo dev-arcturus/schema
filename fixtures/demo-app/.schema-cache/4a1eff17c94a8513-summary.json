@@ -1,0 +1,3 @@
+{
+  "summary": "A small Express + TypeScript demo service backed by SQLite and protected by JWT, implementing Auth (registration/login) and Todos (per-user CRUD) domains. It is organized into five layers: routes, services, repos, middleware, and db — matching the README's vocabulary exactly."
+}

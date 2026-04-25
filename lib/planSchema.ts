@@ -45,8 +45,9 @@ export const freeformStepSchema = z.object({
           .describe("Path relative to repoRoot. Use forward slashes."),
         content: z
           .string()
+          .default("")
           .describe(
-            "FULL new content of the file after the change. Use the empty string to delete.",
+            "Can be empty — the executor will generate content by reading the actual file and applying the step description via LLM. If provided, used as a hint.",
           ),
       }),
     )

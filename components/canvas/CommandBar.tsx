@@ -17,6 +17,7 @@ export function CommandBar() {
   const planState = useStore((s) => s.planState);
   const submit = useStore((s) => s.submitPrompt);
   const cancel = useStore((s) => s.cancelPlan);
+  const presenterMode = useStore((s) => s.presenterMode);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [draft, setDraft] = useState("");
@@ -59,8 +60,12 @@ export function CommandBar() {
           {QUICK_PROMPTS.map((p) => (
             <button
               key={p}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => void submit(p)}
-              className="rounded-full border border-canvas-border bg-canvas-panel/70 px-3 py-1 text-2xs text-canvas-muted transition-colors hover:border-accent/40 hover:bg-canvas-panel hover:text-canvas-ink"
+              className={cn(
+                "rounded-full border border-canvas-border bg-canvas-panel/70 px-3 py-1 text-canvas-muted transition-colors hover:border-accent/40 hover:bg-canvas-panel hover:text-canvas-ink",
+                presenterMode ? "text-xs" : "text-2xs",
+              )}
             >
               {p}
             </button>
@@ -77,15 +82,16 @@ export function CommandBar() {
             setDraft("");
           }}
           className={cn(
-            "group flex items-center gap-2 rounded-xl border bg-canvas-panel/95 px-3 py-2 shadow-panel backdrop-blur transition-all",
+            "group flex items-center gap-2 rounded-xl border bg-canvas-panel/95 shadow-panel backdrop-blur transition-all",
             focused
               ? "border-accent/60 ring-2 ring-accent/20"
               : "border-canvas-border",
+            presenterMode ? "px-4 py-3" : "px-3 py-2",
           )}
         >
           <Sparkles
             className={cn(
-              "h-4 w-4",
+              presenterMode ? "h-5 w-5" : "h-4 w-4",
               thinking
                 ? "animate-pulse text-accent"
                 : "text-canvas-subtle group-focus-within:text-accent",
@@ -99,11 +105,14 @@ export function CommandBar() {
             onBlur={() => setFocused(false)}
             placeholder={
               thinking
-                ? "Schema is planning…"
-                : "Describe an architectural change… (⌘I)"
+                ? "Schema is planning..."
+                : "Describe an architectural change... (Cmd+I)"
             }
             disabled={thinking}
-            className="flex-1 bg-transparent py-1 text-sm text-canvas-ink placeholder:text-canvas-subtle outline-none disabled:opacity-60"
+            className={cn(
+              "flex-1 bg-transparent text-canvas-ink placeholder:text-canvas-subtle outline-none disabled:opacity-60",
+              presenterMode ? "py-1.5 text-base" : "py-1 text-sm",
+            )}
           />
           {thinking ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin text-accent" />
@@ -112,26 +121,30 @@ export function CommandBar() {
               type="submit"
               disabled={!draft.trim()}
               className={cn(
-                "flex h-6 w-6 items-center justify-center rounded-md text-canvas-bg transition",
+                "flex items-center justify-center rounded-md text-canvas-bg transition",
                 draft.trim()
                   ? "bg-accent hover:brightness-110"
                   : "bg-canvas-bg/60 text-canvas-subtle",
+                presenterMode ? "h-8 w-8" : "h-6 w-6",
               )}
               aria-label="Submit"
             >
-              <ArrowUp className="h-3.5 w-3.5" />
+              <ArrowUp className={presenterMode ? "h-4 w-4" : "h-3.5 w-3.5"} />
             </button>
           )}
         </form>
       ) : (
-        <div className="flex items-center justify-between gap-2 rounded-xl border border-canvas-border bg-canvas-panel/95 px-3 py-2 shadow-panel backdrop-blur">
+        <div className={cn(
+          "flex items-center justify-between gap-2 rounded-xl border border-canvas-border bg-canvas-panel/95 shadow-panel backdrop-blur",
+          presenterMode ? "px-4 py-3" : "px-3 py-2",
+        )}>
           <div className="flex min-w-0 items-center gap-2">
-            <Sparkles className="h-4 w-4 shrink-0 text-accent" />
-            <span className="truncate text-sm text-canvas-ink">
+            <Sparkles className={cn("shrink-0 text-accent", presenterMode ? "h-5 w-5" : "h-4 w-4")} />
+            <span className={cn("truncate text-canvas-ink", presenterMode ? "text-base" : "text-sm")}>
               {planState.phase === "preview"
                 ? planState.plan.intent
                 : planState.phase === "running"
-                  ? `applying ${planState.plan.steps.length} step(s)…`
+                  ? `applying ${planState.plan.steps.length} step(s)...`
                   : ""}
             </span>
           </div>

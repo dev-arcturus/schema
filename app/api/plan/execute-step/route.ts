@@ -96,6 +96,19 @@ async function runOpStep(
     );
   }
 
+  // No-op: op detected nothing to change (idempotent) — skip tests, empty patch
+  if (applyResult.filesChanged.length === 0) {
+    return {
+      ok: true,
+      diff: "",
+      filesChanged: [],
+      description: applyResult.description,
+      graphPatch: { addNodes: [], removeNodes: [], addEdges: [], removeEdges: [] },
+      testOutput: "",
+      durationMs: 0,
+    };
+  }
+
   await snapshot.recordMany(repoPath, applyResult.filesChanged);
 
   try {
@@ -153,14 +166,11 @@ async function runFreeformStep(
   intent: string,
 ) {
   const snapshot = new Snapshot();
-  await snapshot.recordMany(
-    repoPath,
-    step.files.map((f) => f.path),
-  );
+  // Snapshot passed into applyFreeform so it covers ALL files (targets + dependents)
 
   let result;
   try {
-    result = await applyFreeform(repoPath, step.files, step.description);
+    result = await applyFreeform(repoPath, step.files, step.description, snapshot);
   } catch (err) {
     await snapshot.rollback();
     return failure(

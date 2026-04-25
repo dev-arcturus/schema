@@ -51,7 +51,11 @@ const op: Op<typeof paramsSchema> = {
       .slice(1, -1)
       .some((a) => Node.isIdentifier(a) && a.getText() === params.middleware);
     if (alreadyApplied) {
-      throw new Error(`${params.middleware} already applied to this route`);
+      // Idempotent — already in place, succeed as no-op
+      return {
+        filesChanged: [],
+        description: `${params.middleware} already applied to ${route.name} — no change needed`,
+      } satisfies OpApplyResult;
     }
 
     const handlerIndex = args.length - 1;

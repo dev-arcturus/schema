@@ -76,13 +76,14 @@ export function evaluateRule(graph: Graph, rule: Rule): Violation | null {
   }
 
   if (offendingNodeIds.size === 0) return null;
+  const nodeIdArr = Array.from(offendingNodeIds);
   return {
     ruleId: rule.id,
     ruleTitle: rule.title,
     severity: rule.severity,
-    nodeIds: Array.from(offendingNodeIds),
-    message: explainViolation(rule, Array.from(offendingNodeIds), graph),
-    suggestedPrompt: rule.prompt,
+    nodeIds: nodeIdArr,
+    message: explainViolation(rule, nodeIdArr, graph),
+    suggestedPrompt: buildRepairPrompt(rule, p, nodeIdArr, graph),
   };
 }
 
@@ -105,4 +106,64 @@ function explainViolation(rule: Rule, nodeIds: string[], graph: Graph): string {
     );
   const tail = nodeIds.length > 4 ? ` +${nodeIds.length - 4} more` : "";
   return `${rule.title} — ${nodeIds.length} violation(s): ${names.join(", ")}${tail}`;
+}
+
+/**
+ * Build a specific repair prompt that tells the planner exactly what's wrong,
+ * which files are involved, and what edges need to be broken/added.
+ */
+function buildRepairPrompt(
+  rule: Rule,
+  predicate: Predicate,
+  nodeIds: string[],
+  graph: Graph,
+): string {
+  const offenders = nodeIds
+    .map((id) => graph.nodes.find((n) => n.id === id))
+    .filter((n): n is GraphNode => Boolean(n));
+
+  if (predicate.type === "no_edge") {
+    // Build a list of specific violating calls
+    const targets = graph.nodes.filter((n) =>
+      predicate.target ? matchNode(n, predicate.target) : false,
+    );
+    const violations: string[] = [];
+    const files = new Set<string>();
+
+    for (const s of offenders) {
+      files.add(s.file);
+      for (const t of targets) {
+        const edges = graph.edges.filter(
+          (e) =>
+            e.source === s.id &&
+            e.target === t.id &&
+            (!predicate.relation || e.relation === predicate.relation),
+        );
+        if (edges.length > 0) {
+          violations.push(`${s.name} (${s.file}) calls ${t.name} (${t.file})`);
+          files.add(t.file);
+        }
+      }
+    }
+
+    const fileList = [...files].join(", ");
+    return [
+      `Fix rule violation: "${rule.title}".`,
+      `These service functions directly call data-layer functions and should not:`,
+      ...violations.map((v) => `- ${v}`),
+      ``,
+      `Files involved: ${fileList}.`,
+      `Refactor the service functions so they receive their data-layer dependencies as parameters instead of importing them directly. Update the callers (route files) to pass the dependencies in.`,
+      `Put ALL file changes in a single freeform step so they are coordinated together.`,
+    ].join("\n");
+  }
+
+  if (predicate.type === "must_have_edge") {
+    const names = offenders.map((n) =>
+      n.meta?.httpMethod ? `${n.meta.httpMethod} ${n.meta.httpPath}` : n.name,
+    );
+    return `Fix: ${rule.title}. Apply the required relation to: ${names.join(", ")}.`;
+  }
+
+  return `Fix: ${rule.title}`;
 }

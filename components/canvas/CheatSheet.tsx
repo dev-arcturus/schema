@@ -10,6 +10,7 @@ const SHORTCUTS: { keys: string[]; description: string }[] = [
   { keys: ["/"], description: "Open node search" },
   { keys: ["Esc"], description: "Cancel pending op / clear selection" },
   { keys: ["⌘", "Z"], description: "Undo last graph patch (visual only)" },
+  { keys: ["P"], description: "Toggle presenter mode (larger UI)" },
 ];
 
 const TIPS: string[] = [
@@ -46,7 +47,7 @@ export function CheatSheet() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="pointer-events-auto absolute bottom-4 right-4 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-canvas-border bg-canvas-panel/90 text-canvas-subtle shadow-panel backdrop-blur transition-colors hover:text-canvas-ink"
+        className="pointer-events-auto absolute bottom-4 right-16 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-canvas-border bg-canvas-panel/90 text-canvas-subtle shadow-panel backdrop-blur transition-colors hover:text-canvas-ink"
         aria-label="keyboard shortcuts"
       >
         <Keyboard className="h-3.5 w-3.5" />

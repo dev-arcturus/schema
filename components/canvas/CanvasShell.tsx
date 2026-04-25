@@ -19,6 +19,16 @@ export function CanvasShell({
   const setWidth = useStore((s) => s.setRightPanelWidth);
   const draggingRef = useRef(false);
 
+  // Hydrate panel width from localStorage after mount to avoid SSR mismatch
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("schema:rightPanelWidth");
+      if (saved) setWidth(Number(saved));
+    } catch {
+      // ignore
+    }
+  }, [setWidth]);
+
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!draggingRef.current) return;
@@ -42,11 +52,11 @@ export function CanvasShell({
 
   return (
     <div className={cn("flex h-screen w-screen flex-col bg-canvas-bg", className)}>
-      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-canvas-border bg-canvas-panel/60 px-4 backdrop-blur">
+      <div className="relative z-50 flex h-12 shrink-0 items-center gap-2 border-b border-canvas-border bg-canvas-panel/60 px-4 backdrop-blur">
         {topBar}
       </div>
       <div className="flex min-h-0 flex-1">
-        <div className="relative min-w-0 flex-1">{children}</div>
+        <div className="relative z-0 min-w-0 flex-1">{children}</div>
         {rightPanel ? (
           <aside
             style={{ width }}

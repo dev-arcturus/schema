@@ -21,6 +21,7 @@ import { layoutGraph } from "@/lib/layout";
 import { RELATION_STYLE } from "./edges/relationStyle";
 import { RouteNode } from "./nodes/RouteNode";
 import { FunctionNode } from "./nodes/FunctionNode";
+import { GraphBeforeAfterToggle } from "./GraphBeforeAfterToggle";
 
 const nodeTypes: NodeTypes = {
   route: RouteNode,
@@ -51,15 +52,23 @@ function GraphCanvasInner() {
   const coveredNodeIds = useStore((s) => s.coveredNodeIds);
   const coverageVisible = useStore((s) => s.coverageVisible);
   const visibleKinds = useStore((s) => s.visibleKinds);
+  const changedNodeIds = useStore((s) => s.changedNodeIds);
+  const changedEdgeIds = useStore((s) => s.changedEdgeIds);
   const selectNode = useStore((s) => s.selectNode);
   const selectEdge = useStore((s) => s.selectEdge);
   const clearSelection = useStore((s) => s.clearSelection);
   const rf = useReactFlow();
 
   const planState = useStore((s) => s.planState);
+  const executingTargetId = useStore((s) => s.executingTargetId);
+
+  // C: Before/after toggle
+  const showGraphBefore = useStore((s) => s.showGraphBefore);
+  const graphSnapshot = useStore((s) => s.graphSnapshot);
+  const activeGraph = showGraphBefore && graphSnapshot ? graphSnapshot : graph;
 
   const ghostEdges = useMemo(() => {
-    if (!graph) return [] as { id: string; source: string; target: string }[];
+    if (!activeGraph) return [] as { id: string; source: string; target: string }[];
     if (planState.phase !== "preview") return [];
     const edges: { id: string; source: string; target: string }[] = [];
     for (const step of planState.plan.steps) {
@@ -76,27 +85,27 @@ function GraphCanvasInner() {
       }
     }
     return edges;
-  }, [graph, planState]);
+  }, [activeGraph, planState]);
 
   const filteredGraph = useMemo(() => {
-    if (!graph) return null;
+    if (!activeGraph) return null;
     const visibleSet = new Set(
-      graph.nodes
+      activeGraph.nodes
         .filter((n) => visibleKinds[n.kind] !== false)
         .map((n) => n.id),
     );
     return {
-      ...graph,
-      nodes: graph.nodes.filter((n) => visibleSet.has(n.id)),
-      edges: graph.edges.filter(
+      ...activeGraph,
+      nodes: activeGraph.nodes.filter((n) => visibleSet.has(n.id)),
+      edges: activeGraph.edges.filter(
         (e) => visibleSet.has(e.source) && visibleSet.has(e.target),
       ),
-      clusters: graph.clusters.map((c) => ({
+      clusters: activeGraph.clusters.map((c) => ({
         ...c,
         nodeIds: c.nodeIds.filter((id) => visibleSet.has(id)),
       })),
     };
-  }, [graph, visibleKinds]);
+  }, [activeGraph, visibleKinds]);
 
   const layout = useMemo(
     () =>
@@ -125,21 +134,27 @@ function GraphCanvasInner() {
       const isFocus = focusTargetIds.includes(n.id);
       const isHovered = hoverHighlightIds.includes(n.id);
       const isViolating = violationNodeIds.has(n.id);
+      const isExecuting = executingTargetId === n.id;
+      const isChanged = changedNodeIds.has(n.id) && !isNew;
       const isUncovered =
         coverageVisible && !coveredNodeIds.has(n.id) && n.kind !== "external";
       const dimmed =
         hoverHighlightIds.length > 0 && !isHovered;
-      const baseCls = isNew
-        ? "schema-node-new"
-        : isFocus
-          ? "schema-node-focus"
-          : isHovered
-            ? "schema-node-hover"
-            : isViolating
-              ? "schema-node-violation"
-              : dimmed
-                ? "schema-node-dim"
-                : "";
+      const baseCls = isExecuting
+        ? "schema-node-executing"
+        : isNew
+          ? "schema-node-new"
+          : isChanged
+            ? "schema-node-changed"
+            : isFocus
+              ? "schema-node-focus"
+              : isHovered
+                ? "schema-node-hover"
+                : isViolating
+                  ? "schema-node-violation"
+                  : dimmed
+                    ? "schema-node-dim"
+                    : "";
       const cls = isUncovered
         ? `${baseCls} schema-node-uncovered`.trim()
         : baseCls;
@@ -147,7 +162,7 @@ function GraphCanvasInner() {
         id: n.id,
         type: isRoute ? "route" : "function",
         position: { x: pos.x, y: pos.y },
-        data: { node: n, failed, isNew, isFocus, isViolating, isUncovered },
+        data: { node: n, failed, isNew, isFocus, isViolating, isUncovered, isExecuting },
         selected: selection?.kind === "node" && selection.id === n.id,
         draggable: true,
         className: cls,
@@ -167,6 +182,8 @@ function GraphCanvasInner() {
     violationNodeIds,
     coveredNodeIds,
     coverageVisible,
+    executingTargetId,
+    changedNodeIds,
   ]);
 
   const flowEdges: Edge[] = useMemo(() => {
@@ -186,28 +203,31 @@ function GraphCanvasInner() {
           recentlyAdded.edgeIds.has(e.id) &&
           recentlyAdded.until > Date.now()
         );
+        const isChanged = changedEdgeIds.has(e.id) && !isNew;
+        const highlighted = isNew || isChanged;
         return {
           id: e.id,
           source: e.source,
           target: e.target,
           type: "smoothstep",
-          animated: e.relation === "applies_middleware" || isNew,
+          animated: e.relation === "applies_middleware" || highlighted,
           markerEnd: {
             type: MarkerType.ArrowClosed,
             width: 18,
             height: 18,
-            color: isNew ? "hsl(142 70% 60%)" : style.stroke,
+            color: highlighted ? "hsl(142 70% 60%)" : style.stroke,
           },
           style: {
-            stroke: isNew ? "hsl(142 70% 60%)" : style.stroke,
-            strokeWidth: (isNew ? style.width + 1 : style.width) + (isSelected ? 0.5 : 0),
+            stroke: highlighted ? "hsl(142 70% 60%)" : style.stroke,
+            strokeWidth: (highlighted ? style.width + 1 : style.width) + (isSelected ? 0.5 : 0),
             ...(style.dash ? { strokeDasharray: style.dash } : {}),
-            opacity: isSelected || isNew ? 1 : 0.9,
+            opacity: isSelected || highlighted ? 1 : 0.9,
           },
+          className: isNew ? "schema-edge-animate" : undefined,
           data: { relation: e.relation },
         };
       });
-  }, [filteredGraph, selection, recentlyAdded]);
+  }, [filteredGraph, selection, recentlyAdded, changedEdgeIds]);
 
   const allEdges: Edge[] = useMemo(() => {
     const known = new Set((filteredGraph?.nodes ?? []).map((n) => n.id));
@@ -259,7 +279,7 @@ function GraphCanvasInner() {
 
   // Auto-zoom to focus targets when a plan starts running
   useEffect(() => {
-    if (focusTargetIds.length === 0 || !graph) return;
+    if (focusTargetIds.length === 0 || !activeGraph) return;
     const targets = focusTargetIds
       .map((id) => layout.positions.get(id))
       .filter((p): p is { x: number; y: number; id: string } => Boolean(p));
@@ -274,7 +294,18 @@ function GraphCanvasInner() {
       { x: minX, y: minY, width: maxX - minX, height: maxY - minY },
       { duration: 600, padding: 0.1 },
     );
-  }, [focusTargetIds, graph, layout, rf]);
+  }, [focusTargetIds, activeGraph, layout, rf]);
+
+  // C: Auto-zoom to executing target
+  useEffect(() => {
+    if (!executingTargetId || !activeGraph) return;
+    const pos = layout.positions.get(executingTargetId);
+    if (!pos) return;
+    rf.fitBounds(
+      { x: pos.x - 100, y: pos.y - 80, width: 420, height: 220 },
+      { duration: 400, padding: 0.2 },
+    );
+  }, [executingTargetId, activeGraph, layout, rf]);
 
   return (
     <>
@@ -335,6 +366,7 @@ function GraphCanvasInner() {
           ariaLabel="minimap"
         />
       </ReactFlow>
+      <GraphBeforeAfterToggle />
     </>
   );
 }

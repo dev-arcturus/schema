@@ -70,11 +70,19 @@ const op: Op<typeof paramsSchema> = {
     const exportedName = fnNode.name;
 
     if (sf.getVariableDeclaration(exportedName) || sf.getVariableDeclaration(innerName)) {
-      throw new Error(`${fnNode.name} appears already wrapped`);
+      return {
+        filesChanged: [],
+        description: `${fnNode.name} is already wrapped — no change needed`,
+      } satisfies OpApplyResult;
     }
 
-    fnDecl.rename(innerName);
+    // Instead of renaming (which breaks cross-file imports), we:
+    // 1. Remove the export keyword from the original function
+    // 2. Rename it to *Inner using setName (local only, no cross-file rename)
+    // 3. Add a new exported const with the original name that wraps it
+    // This way all external imports of the original name still resolve correctly.
     fnDecl.setIsExported(false);
+    fnDecl.set({ name: innerName });
 
     ensureWrapperImport(sf, rootDir, params.variant);
 

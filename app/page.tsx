@@ -13,6 +13,9 @@ import { PlanPanel } from "@/components/canvas/PlanPanel";
 import { PlanProgress } from "@/components/canvas/PlanProgress";
 import { CheatSheet } from "@/components/canvas/CheatSheet";
 import { BlurOverlay } from "@/components/canvas/BlurOverlay";
+import { FullscreenDiffOverlay } from "@/components/canvas/FullscreenDiffOverlay";
+import { PresenterToggle } from "@/components/canvas/PresenterToggle";
+import { GraphLegend } from "@/components/canvas/GraphLegend";
 
 export default function Page() {
   const graph = useStore((s) => s.graph);
@@ -40,6 +43,9 @@ export default function Page() {
           <PlanProgress />
           <CheatSheet />
           <Toast />
+          <FullscreenDiffOverlay />
+          <PresenterToggle />
+          <GraphLegend />
         </>
       ) : (
         <EmptyState />

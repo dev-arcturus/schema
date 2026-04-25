@@ -140,6 +140,21 @@ async function runOpStep(
     return;
   }
 
+  // No-op: op detected nothing to change (idempotent) — skip tests, empty patch
+  if (applyResult.filesChanged.length === 0) {
+    send({
+      type: "result",
+      ok: true,
+      diff: "",
+      filesChanged: [],
+      description: applyResult.description,
+      graphPatch: { addNodes: [], removeNodes: [], addEdges: [], removeEdges: [] },
+      testOutput: "",
+      durationMs: 0,
+    });
+    return;
+  }
+
   await snapshot.recordMany(repoPath, applyResult.filesChanged);
   await project.save();
 
@@ -195,71 +210,111 @@ async function runFreeformStep(
   intent: string,
   send: Send,
 ): Promise<void> {
-  const snapshot = new Snapshot();
-  await snapshot.recordMany(
-    repoPath,
-    step.files.map((f) => f.path),
-  );
+  const MAX_RETRIES = 3;
+  const baseDescription = step.description;
 
-  let result;
-  try {
-    result = await applyFreeform(repoPath, step.files, step.description);
-  } catch (err) {
-    await snapshot.rollback();
-    send({
-      type: "result",
-      ok: false,
-      error: err instanceof Error ? err.message : "freeform apply failed",
-      diff: "",
-      filesChanged: [],
-      description: step.description,
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      send({ type: "phase", phase: "applying" as const });
+    }
+
+    const snapshot = new Snapshot();
+
+    let result;
+    try {
+      result = await applyFreeform(repoPath, step.files, step.description, snapshot);
+    } catch (err) {
+      await snapshot.rollback();
+      const errMsg = err instanceof Error ? err.message : "freeform apply failed";
+      if (attempt < MAX_RETRIES && process.env.ANTHROPIC_API_KEY) {
+        step = {
+          ...step,
+          description: `${baseDescription}\n\nATTEMPT ${attempt + 1} FAILED during apply: ${errMsg}\nFix: make sure all imports reference existing packages and files. Do not invent helper functions without defining them.`,
+        };
+        continue;
+      }
+      send({
+        type: "result",
+        ok: false,
+        error: errMsg,
+        diff: "",
+        filesChanged: [],
+        description: step.description,
+      });
+      return;
+    }
+
+    if (result.filesChanged.length === 0) {
+      send({
+        type: "result",
+        ok: true,
+        diff: "",
+        filesChanged: [],
+        description: result.description,
+        graphPatch: { addNodes: [], removeNodes: [], addEdges: [], removeEdges: [] },
+        testOutput: "",
+        durationMs: 0,
+      });
+      return;
+    }
+
+    const diff = await computeDiff(snapshot, repoPath);
+    send({ type: "diff", diff, filesChanged: result.filesChanged });
+    send({ type: "phase", phase: "testing" });
+
+    const testRun = await runTests(repoPath, (chunk) => {
+      send({ type: "test_output", chunk });
     });
-    return;
-  }
 
-  const diff = await computeDiff(snapshot, repoPath);
-  send({ type: "diff", diff, filesChanged: result.filesChanged });
-  send({ type: "phase", phase: "testing" });
+    if (!testRun.passed) {
+      await snapshot.rollback();
 
-  const testRun = await runTests(repoPath, (chunk) => {
-    send({ type: "test_output", chunk });
-  });
+      if (attempt < MAX_RETRIES && process.env.ANTHROPIC_API_KEY) {
+        const error = extractFirstFailure(testRun.output);
+        const tail = testRun.output.split("\n").slice(-25).join("\n");
+        step = {
+          ...step,
+          description: `${baseDescription}\n\nATTEMPT ${attempt + 1} FAILED. Tests broke with: ${error}\n\nTest output:\n${tail}\n\nIMPORTANT: Fix the specific error above. Common mistakes to avoid:\n- Do not reference functions that don't exist (like makeUserRepo/makeTodoRepo) unless you define them\n- Do not change import package names (bcryptjs must stay bcryptjs)\n- If you change a function signature, update ALL callers\n- Keep .js extensions in relative imports`,
+        };
+        continue;
+      }
 
-  if (!testRun.passed) {
-    await snapshot.rollback();
-    const error = extractFirstFailure(testRun.output);
-    const explanation = await explainFailure(error, testRun.output);
+      const error = extractFirstFailure(testRun.output);
+      const explanation = await explainFailure(error, testRun.output);
+      send({
+        type: "result",
+        ok: false,
+        error,
+        explanation,
+        diff,
+        filesChanged: result.filesChanged,
+        description: result.description,
+        testOutput: testRun.output,
+      });
+      return;
+    }
+
+    // Tests passed!
+    send({ type: "phase", phase: "verifying_intent" });
+    const intentMatch = await intentCheck({
+      userIntent: intent,
+      stepDescription: step.description,
+      diff,
+    });
+
     send({
       type: "result",
-      ok: false,
-      error,
-      explanation,
+      ok: true,
       diff,
       filesChanged: result.filesChanged,
       description: result.description,
       testOutput: testRun.output,
+      durationMs: testRun.durationMs,
+      intentCheck: intentMatch,
+      graphPatch: { addNodes: [], removeNodes: [], addEdges: [], removeEdges: [] },
     });
     return;
-  }
-
-  send({ type: "phase", phase: "verifying_intent" });
-  const intentMatch = await intentCheck({
-    userIntent: intent,
-    stepDescription: step.description,
-    diff,
-  });
-
-  send({
-    type: "result",
-    ok: true,
-    diff,
-    filesChanged: result.filesChanged,
-    description: result.description,
-    testOutput: testRun.output,
-    durationMs: testRun.durationMs,
-    intentCheck: intentMatch,
-    graphPatch: { addNodes: [], removeNodes: [], addEdges: [], removeEdges: [] },
-  });
+  } // end retry loop
 }
 
 function extractFirstFailure(output: string): string {

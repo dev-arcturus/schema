@@ -63,7 +63,10 @@ const op: Op<typeof paramsSchema> = {
       .getVariableDeclarations()
       .some((v) => v.getName() === wrapperName);
     if (exists) {
-      throw new Error(`${wrapperName} already exists in ${fnNode.file}`);
+      return {
+        filesChanged: [],
+        description: `${wrapperName} already exists — no change needed`,
+      } satisfies OpApplyResult;
     }
 
     ensureMemoizeImport(sf, rootDir);
