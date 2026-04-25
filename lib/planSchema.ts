@@ -85,6 +85,8 @@ export type StepResult = {
   diff?: string;
   filesChanged?: string[];
   testOutput?: string;
+  testOutputLive?: string;
+  phase?: "applying" | "testing" | "verifying_intent" | "done";
   error?: string;
   explanation?: string;
   intentCheck?: { matches: boolean; reason: string };

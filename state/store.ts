@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import type { Graph, GraphEdge, GraphNode, NodeKind } from "@/extractor/types";
 import type { OpDescriptor, OpGraphPatch } from "@/ops/types";
-import type { Plan, Step, StepResult } from "@/lib/planSchema";
+import type { Plan, StepResult } from "@/lib/planSchema";
 
 export type Insight = {
   id: string;
@@ -311,7 +311,7 @@ export const useStore = create<Store>((set, get) => ({
       });
 
       try {
-        const res = await fetch("/api/plan/execute-step", {
+        const res = await fetch("/api/plan/execute-step-stream", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
@@ -321,30 +321,96 @@ export const useStore = create<Store>((set, get) => ({
             intent: prompt,
           }),
         });
-        const data = await res.json();
+        if (!res.ok || !res.body) {
+          throw new Error("execute-step request failed");
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        let live = "";
+        let data: Record<string, unknown> | null = null;
+        while (true) {
+          const chunk = await reader.read();
+          if (chunk.done) break;
+          buf += decoder.decode(chunk.value, { stream: true });
+          const lines = buf.split("\n");
+          buf = lines.pop() ?? "";
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            let ev: Record<string, unknown>;
+            try {
+              ev = JSON.parse(line);
+            } catch {
+              continue;
+            }
+            if (ev.type === "test_output" && typeof ev.chunk === "string") {
+              live += ev.chunk;
+              const cur = get().planState;
+              if (cur.phase === "running") {
+                const rr = [...cur.results];
+                rr[i] = {
+                  ...rr[i]!,
+                  status: "running",
+                  testOutputLive: live,
+                };
+                set({ planState: { ...cur, results: rr } });
+              }
+            } else if (ev.type === "phase") {
+              const cur = get().planState;
+              if (cur.phase === "running") {
+                const rr = [...cur.results];
+                rr[i] = {
+                  ...rr[i]!,
+                  status: "running",
+                  phase: ev.phase as StepResult["phase"],
+                };
+                set({ planState: { ...cur, results: rr } });
+              }
+            } else if (ev.type === "diff") {
+              const cur = get().planState;
+              if (cur.phase === "running") {
+                const rr = [...cur.results];
+                rr[i] = {
+                  ...rr[i]!,
+                  status: "running",
+                  diff: ev.diff as string,
+                  filesChanged: ev.filesChanged as string[],
+                };
+                set({ planState: { ...cur, results: rr } });
+              }
+            } else if (ev.type === "result") {
+              data = ev;
+            }
+          }
+        }
+        if (!data) {
+          throw new Error("no result from stream");
+        }
         const cur2 = get().planState;
         if (cur2.phase !== "running") return;
         const r2 = [...cur2.results];
         if (data.ok) {
           r2[i] = {
             status: "success",
-            description: data.description ?? step.description,
-            diff: data.diff,
-            filesChanged: data.filesChanged,
-            testOutput: data.testOutput,
-            intentCheck: data.intentCheck,
+            description: (data.description as string) ?? step.description,
+            diff: data.diff as string | undefined,
+            filesChanged: data.filesChanged as string[] | undefined,
+            testOutput: data.testOutput as string | undefined,
+            intentCheck: data.intentCheck as
+              | { matches: boolean; reason: string }
+              | undefined,
           };
           if (data.graphPatch) {
-            workingGraph = applyPatch(workingGraph, data.graphPatch);
+            workingGraph = applyPatch(
+              workingGraph,
+              data.graphPatch as OpGraphPatch,
+            );
+            const patch = data.graphPatch as OpGraphPatch;
             const newNodeIds = new Set<string>(
-              (data.graphPatch.addNodes ?? []).map(
-                (n: { id: string }) => n.id,
-              ),
+              (patch.addNodes ?? []).map((n) => n.id),
             );
             const newEdgeIds = new Set<string>(
-              (data.graphPatch.addEdges ?? []).map(
-                (e: { id: string }) => e.id,
-              ),
+              (patch.addEdges ?? []).map((e) => e.id),
             );
             set({
               graph: workingGraph,
@@ -361,11 +427,11 @@ export const useStore = create<Store>((set, get) => ({
           r2[i] = {
             status: "failure",
             description: step.description,
-            diff: data.diff ?? "",
-            filesChanged: data.filesChanged ?? [],
-            testOutput: data.testOutput,
-            error: data.error,
-            explanation: data.explanation,
+            diff: (data.diff as string) ?? "",
+            filesChanged: (data.filesChanged as string[]) ?? [],
+            testOutput: data.testOutput as string | undefined,
+            error: data.error as string,
+            explanation: data.explanation as string | undefined,
           };
           // Mark remaining as skipped
           for (let j = i + 1; j < r2.length; j++) {
@@ -412,7 +478,7 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   cancelPlan() {
-    set({ planState: { phase: "idle" } });
+    set({ planState: { phase: "idle" }, focusTargetIds: [] });
   },
 
   async loadInsights() {

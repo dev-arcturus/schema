@@ -248,6 +248,24 @@ function StepRow({
             </div>
           ) : null}
 
+          {status === "running" && result?.phase ? (
+            <div className="mt-1 text-2xs text-canvas-muted">
+              {result.phase === "applying"
+                ? "applying AST transform…"
+                : result.phase === "testing"
+                  ? "running fixture tests…"
+                  : result.phase === "verifying_intent"
+                    ? "Haiku verifying intent…"
+                    : ""}
+            </div>
+          ) : null}
+
+          {status === "running" && result?.testOutputLive ? (
+            <pre className="mt-2 max-h-[120px] overflow-auto rounded border border-canvas-border bg-canvas-bg/60 px-3 py-2 font-mono text-2xs text-canvas-muted">
+              {tail(result.testOutputLive, 30)}
+            </pre>
+          ) : null}
+
           {result?.diff && (status === "success" || status === "failure") ? (
             <div className="mt-2 overflow-hidden rounded border border-canvas-border bg-canvas-bg/40">
               <DiffView diff={result.diff} />
@@ -257,6 +275,11 @@ function StepRow({
       </div>
     </div>
   );
+}
+
+function tail(s: string, n: number): string {
+  const lines = s.split("\n");
+  return lines.slice(-n).join("\n");
 }
 
 function StepStatusIcon({
