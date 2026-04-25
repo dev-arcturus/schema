@@ -10,6 +10,7 @@ export function StatusPill() {
   const applyState = useStore((s) => s.applyState);
   const clusterSource = useStore((s) => s.clusterSource);
   const origin = useStore((s) => s.origin);
+  const stats = useStore((s) => s.sessionStats);
 
   let label = "idle";
   let tone = "bg-accent-success/80";
@@ -30,7 +31,7 @@ export function StatusPill() {
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-4">
       {origin?.kind === "github" ? (
         <a
           href={origin.url}
@@ -41,6 +42,22 @@ export function StatusPill() {
           <Github className="h-3 w-3" />
           <span className="font-mono">{origin.owner}/{origin.repo}</span>
         </a>
+      ) : null}
+      {graph && stats.prompts > 0 ? (
+        <div className="flex items-center gap-3 font-mono text-2xs text-canvas-muted">
+          <span>
+            <span className="text-canvas-ink">{stats.prompts}</span> prompt
+            {stats.prompts === 1 ? "" : "s"}
+          </span>
+          <span>
+            <span className="text-canvas-ink">{stats.stepsApplied}</span> step
+            {stats.stepsApplied === 1 ? "" : "s"}
+          </span>
+          <span>
+            <span className="text-canvas-ink">{stats.filesChanged}</span> file
+            {stats.filesChanged === 1 ? "" : "s"}
+          </span>
+        </div>
       ) : null}
       <div className="flex items-center gap-2 text-2xs uppercase tracking-wider text-canvas-subtle">
         {loading || applyState.phase === "running" ? (

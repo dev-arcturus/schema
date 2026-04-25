@@ -120,6 +120,7 @@ type Store = {
   focusTargetIds: string[];
   hoverHighlightIds: string[];
   setHoverHighlight: (ids: string[]) => void;
+  sessionStats: { prompts: number; stepsApplied: number; filesChanged: number };
 
   visibleKinds: Partial<Record<NodeKind, boolean>>;
   toggleKind: (kind: NodeKind) => void;
@@ -176,6 +177,7 @@ export const useStore = create<Store>((set, get) => ({
   focusTargetIds: [],
   hoverHighlightIds: [],
   setHoverHighlight: (ids) => set({ hoverHighlightIds: ids }),
+  sessionStats: { prompts: 0, stepsApplied: 0, filesChanged: 0 },
 
   visibleKinds: {
     route_handler: true,
@@ -468,6 +470,12 @@ export const useStore = create<Store>((set, get) => ({
 
     const final = get().planState;
     if (final.phase !== "running") return;
+    const stepsApplied = final.results.filter((r) => r.status === "success").length;
+    const filesTouched = new Set<string>();
+    for (const r of final.results) {
+      for (const f of r.filesChanged ?? []) filesTouched.add(f);
+    }
+    const prevStats = get().sessionStats;
     set({
       planState: {
         phase: "done",
@@ -481,6 +489,11 @@ export const useStore = create<Store>((set, get) => ({
         ...get().chatHistory,
         { prompt, intent: plan.intent, appliedSteps: appliedDescriptions },
       ],
+      sessionStats: {
+        prompts: prevStats.prompts + 1,
+        stepsApplied: prevStats.stepsApplied + stepsApplied,
+        filesChanged: prevStats.filesChanged + filesTouched.size,
+      },
     });
   },
 
@@ -557,6 +570,7 @@ export const useStore = create<Store>((set, get) => ({
         loading: false,
         chatHistory: [],
         insights: [],
+        sessionStats: { prompts: 0, stepsApplied: 0, filesChanged: 0 },
       });
       void get().loadInsights();
     } catch (err) {
