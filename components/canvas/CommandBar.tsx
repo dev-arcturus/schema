@@ -5,6 +5,13 @@ import { Sparkles, ArrowUp, Loader2, X } from "lucide-react";
 import { useStore } from "@/state/store";
 import { cn } from "@/lib/utils";
 
+const QUICK_PROMPTS: string[] = [
+  "Protect every unauthed resource route",
+  "Memoize verifyToken so middleware doesn't re-verify",
+  "Extract auth into its own module",
+  "Wrap every service with logging",
+];
+
 export function CommandBar() {
   const graph = useStore((s) => s.graph);
   const planState = useStore((s) => s.planState);
@@ -41,8 +48,24 @@ export function CommandBar() {
     planState.phase === "thinking" ||
     planState.phase === "done";
 
+  const showQuickPrompts =
+    planState.phase === "idle" && draft.trim().length === 0;
+
   return (
-    <div className="pointer-events-auto absolute bottom-4 left-1/2 z-30 w-[640px] max-w-[calc(100%-32px)] -translate-x-1/2">
+    <div className="pointer-events-auto absolute bottom-4 left-1/2 z-30 flex w-[640px] max-w-[calc(100%-32px)] -translate-x-1/2 flex-col gap-2">
+      {showQuickPrompts ? (
+        <div className="flex flex-wrap items-center justify-center gap-1.5">
+          {QUICK_PROMPTS.map((p) => (
+            <button
+              key={p}
+              onClick={() => void submit(p)}
+              className="rounded-full border border-canvas-border bg-canvas-panel/70 px-3 py-1 text-2xs text-canvas-muted transition-colors hover:border-accent/40 hover:bg-canvas-panel hover:text-canvas-ink"
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+      ) : null}
       {showInput ? (
         <form
           onSubmit={(e) => {

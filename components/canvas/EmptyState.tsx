@@ -1,9 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Github, Loader2, Play, Folder, KeyRound, Sparkles } from "lucide-react";
 import { useStore } from "@/state/store";
 import { cn } from "@/lib/utils";
+
+const LOADING_PHASES = [
+  "Walking source files with ts-morph",
+  "Reading README for domain context",
+  "Asking Sonnet to cluster components",
+  "Surfacing architectural insights",
+];
+
+function useLoadingPhase(loading: boolean): string {
+  const [phase, setPhase] = useState(LOADING_PHASES[0]!);
+  useEffect(() => {
+    if (!loading) return;
+    let i = 0;
+    setPhase(LOADING_PHASES[0]!);
+    const interval = setInterval(() => {
+      i = (i + 1) % LOADING_PHASES.length;
+      setPhase(LOADING_PHASES[i]!);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, [loading]);
+  return phase;
+}
 
 const SAMPLE_REPOS: { label: string; value: string; tag: string }[] = [
   { label: "Express + JWT demo", value: "fixtures/demo-app", tag: "local" },
@@ -23,6 +45,30 @@ export function EmptyState() {
   const loadGraph = useStore((s) => s.loadGraph);
 
   const [showToken, setShowToken] = useState(false);
+  const phase = useLoadingPhase(loading);
+
+  if (loading) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center p-6">
+        <div className="flex w-full max-w-sm flex-col items-center gap-4 rounded-xl border border-canvas-border bg-canvas-panel/90 px-6 py-8 shadow-panel backdrop-blur">
+          <div className="relative flex h-12 w-12 items-center justify-center">
+            <div className="absolute inset-0 animate-ping rounded-full bg-accent/20" />
+            <Loader2 className="h-7 w-7 animate-spin text-accent" />
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <div className="text-sm font-medium text-canvas-ink">
+              {repoSource === "github"
+                ? `Loading ${repoValue}`
+                : `Loading ${repoValue}`}
+            </div>
+            <div className="animate-fade-in text-2xs text-canvas-subtle" key={phase}>
+              {phase}…
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="absolute inset-0 flex items-center justify-center overflow-y-auto p-6">
