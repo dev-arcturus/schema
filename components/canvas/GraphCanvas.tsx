@@ -19,49 +19,90 @@ import { layoutGraph } from "@/lib/layout";
 import { RELATION_STYLE } from "./edges/relationStyle";
 import { RouteNode } from "./nodes/RouteNode";
 import { FunctionNode } from "./nodes/FunctionNode";
+import { ClusterNode } from "./nodes/ClusterNode";
 
 const nodeTypes: NodeTypes = {
   route: RouteNode,
   function: FunctionNode,
+  cluster: ClusterNode,
 };
 
 export function GraphCanvas() {
   const graph = useStore((s) => s.graph);
   const selection = useStore((s) => s.selection);
   const failureFlash = useStore((s) => s.failureFlash);
+  const visibleKinds = useStore((s) => s.visibleKinds);
   const selectNode = useStore((s) => s.selectNode);
   const selectEdge = useStore((s) => s.selectEdge);
   const clearSelection = useStore((s) => s.clearSelection);
 
-  const positions = useMemo(
-    () => (graph ? layoutGraph(graph) : new Map()),
-    [graph],
+  const filteredGraph = useMemo(() => {
+    if (!graph) return null;
+    const visibleSet = new Set(
+      graph.nodes
+        .filter((n) => visibleKinds[n.kind] !== false)
+        .map((n) => n.id),
+    );
+    return {
+      ...graph,
+      nodes: graph.nodes.filter((n) => visibleSet.has(n.id)),
+      edges: graph.edges.filter(
+        (e) => visibleSet.has(e.source) && visibleSet.has(e.target),
+      ),
+      clusters: graph.clusters.map((c) => ({
+        ...c,
+        nodeIds: c.nodeIds.filter((id) => visibleSet.has(id)),
+      })),
+    };
+  }, [graph, visibleKinds]);
+
+  const layout = useMemo(
+    () =>
+      filteredGraph
+        ? layoutGraph(filteredGraph)
+        : { positions: new Map(), clusters: [] as ReturnType<typeof layoutGraph>["clusters"] },
+    [filteredGraph],
   );
 
   const flowNodes: Node[] = useMemo(() => {
-    if (!graph) return [];
-    return graph.nodes.map((n) => {
-      const pos = positions.get(n.id) ?? { x: 0, y: 0 };
+    if (!filteredGraph) return [];
+    const out: Node[] = [];
+    for (const region of layout.clusters) {
+      out.push({
+        id: `__cluster:${region.id}`,
+        type: "cluster",
+        position: { x: region.x, y: region.y },
+        data: { name: region.name },
+        style: { width: region.width, height: region.height, zIndex: -10 },
+        draggable: false,
+        selectable: false,
+        focusable: false,
+      });
+    }
+    for (const n of filteredGraph.nodes) {
+      const pos = layout.positions.get(n.id) ?? { x: 0, y: 0 };
       const isRoute = n.kind === "route_handler" && n.meta?.httpMethod;
-      const failed =
+      const failed = !!(
         failureFlash &&
         failureFlash.targetId === n.id &&
-        failureFlash.until > Date.now();
-      return {
+        failureFlash.until > Date.now()
+      );
+      out.push({
         id: n.id,
         type: isRoute ? "route" : "function",
         position: { x: pos.x, y: pos.y },
         data: { node: n, failed },
         selected: selection?.kind === "node" && selection.id === n.id,
         draggable: true,
-      };
-    });
-  }, [graph, positions, selection, failureFlash]);
+      });
+    }
+    return out;
+  }, [filteredGraph, layout, selection, failureFlash]);
 
   const flowEdges: Edge[] = useMemo(() => {
-    if (!graph) return [];
-    const known = new Set(graph.nodes.map((n) => n.id));
-    return graph.edges
+    if (!filteredGraph) return [];
+    const known = new Set(filteredGraph.nodes.map((n) => n.id));
+    return filteredGraph.edges
       .filter((e) => {
         const style = RELATION_STYLE[e.relation];
         if (style.hidden) return false;
@@ -90,7 +131,7 @@ export function GraphCanvas() {
           data: { relation: e.relation },
         };
       });
-  }, [graph, selection]);
+  }, [filteredGraph, selection]);
 
   // Force a redraw shortly after a failure flash so it can clear
   useEffect(() => {
@@ -106,7 +147,7 @@ export function GraphCanvas() {
         edges={flowEdges}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.25, maxZoom: 1.1 }}
+        fitViewOptions={{ padding: 0.15, maxZoom: 1.0, minZoom: 0.3 }}
         proOptions={{ hideAttribution: true }}
         minZoom={0.2}
         maxZoom={2}
@@ -138,6 +179,7 @@ export function GraphCanvas() {
           maskStrokeColor="hsl(220 14% 18%)"
           maskStrokeWidth={1}
           nodeColor={(n) => {
+            if (n.type === "cluster") return "transparent";
             const k = (n.data as { node?: { kind?: string } })?.node?.kind;
             switch (k) {
               case "route_handler":

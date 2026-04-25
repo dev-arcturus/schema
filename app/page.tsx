@@ -11,6 +11,8 @@ import { Shortcuts } from "@/components/canvas/Shortcuts";
 import { StatusPill } from "@/components/canvas/StatusPill";
 import { Toast } from "@/components/canvas/Toast";
 import { ReadmePeek } from "@/components/canvas/ReadmePeek";
+import { SearchBar } from "@/components/canvas/SearchBar";
+import { KindFilter } from "@/components/canvas/KindFilter";
 
 export default function Page() {
   const graph = useStore((s) => s.graph);
@@ -33,6 +35,8 @@ export default function Page() {
         <>
           <GraphCanvas />
           <ReadmePeek />
+          <SearchBar />
+          <KindFilter />
           <OpsMenu />
           <Toast />
         </>

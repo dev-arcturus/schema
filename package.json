@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.0.6",
+    "@dagrejs/dagre": "^3.0.0",
+    "@types/dagre": "^0.7.54",
     "@types/diff": "^7.0.2",
     "@xyflow/react": "^12.3.6",
     "ai": "^4.0.20",

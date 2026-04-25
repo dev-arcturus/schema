@@ -81,6 +81,8 @@ export function extractGraph(opts: ExtractOptions): Graph {
     collectExpressRoutes(sf, opts.rootDir, nodes, edges, symbolTable, mounts);
   }
 
+  applyNextjsPatterns(opts.rootDir, nodes);
+
   for (const entry of symbolTable.values()) {
     collectCalls(entry, opts.rootDir, edges, symbolTable);
   }
@@ -422,6 +424,78 @@ function resolveIdentifier(
 
 function makeId(file: string, name: string): string {
   return `fn:${file}:${name}`;
+}
+
+const HTTP_METHODS_UPPER = new Set([
+  "GET",
+  "POST",
+  "PUT",
+  "PATCH",
+  "DELETE",
+  "OPTIONS",
+  "HEAD",
+]);
+
+function applyNextjsPatterns(rootDir: string, nodes: GraphNode[]): void {
+  void rootDir;
+  for (const node of nodes) {
+    const detected = detectNextjsFile(node.file);
+    if (!detected) continue;
+
+    if (detected.kind === "page") {
+      const isComponentName = /^[A-Z]/.test(node.name);
+      if (!isComponentName) continue;
+      node.kind = "route_handler";
+      node.meta = {
+        ...(node.meta ?? {}),
+        httpMethod: "PAGE",
+        httpPath: detected.urlPath,
+      };
+    } else if (detected.kind === "route") {
+      if (!HTTP_METHODS_UPPER.has(node.name)) continue;
+      node.kind = "route_handler";
+      node.meta = {
+        ...(node.meta ?? {}),
+        httpMethod: node.name,
+        httpPath: detected.urlPath,
+      };
+    } else if (detected.kind === "middleware") {
+      if (node.name !== "middleware") continue;
+      node.kind = "middleware";
+      node.meta = { ...(node.meta ?? {}), summary: "next.js middleware" };
+    }
+  }
+}
+
+function detectNextjsFile(
+  rel: string,
+):
+  | { kind: "page" | "route" | "middleware"; urlPath: string }
+  | null {
+  // Strip leading "./" and any "src/" prefix Next allows
+  const stripped = rel.replace(/^\.\//, "").replace(/^src\//, "");
+
+  let m = stripped.match(/^app\/(.+?)?(\/)?page\.(tsx?|jsx?)$/);
+  if (m) {
+    return { kind: "page", urlPath: nextjsUrlPath(m[1] ?? "") };
+  }
+  m = stripped.match(/^app\/(.+?)?(\/)?route\.(tsx?|jsx?)$/);
+  if (m) {
+    return { kind: "route", urlPath: nextjsUrlPath(m[1] ?? "") };
+  }
+  if (stripped === "middleware.ts" || stripped === "middleware.js") {
+    return { kind: "middleware", urlPath: "/" };
+  }
+  return null;
+}
+
+function nextjsUrlPath(segs: string): string {
+  if (!segs) return "/";
+  const parts = segs.split("/").filter(Boolean);
+  const out = parts
+    .filter((p) => !(p.startsWith("(") && p.endsWith(")")))
+    .map((p) => p.replace(/^\[\.\.\.(.+)\]$/, "*$1").replace(/^\[(.+)\]$/, ":$1"));
+  return "/" + out.join("/");
 }
 
 function joinPaths(mount: string, local: string): string {

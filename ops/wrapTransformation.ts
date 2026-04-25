@@ -44,8 +44,9 @@ const op: Op<typeof paramsSchema> = {
   ],
   appliesTo: (target) =>
     target.kind === "node" &&
-    (target.node.kind === "service" || target.node.kind === "data_access") &&
-    !target.node.id.startsWith("route:"),
+    !target.node.id.startsWith("route:") &&
+    target.node.kind !== "external" &&
+    target.node.kind !== "model",
   async apply(target, params, project) {
     if (target.kind !== "node") throw new Error("expected node target");
     const fnNode = target.node;

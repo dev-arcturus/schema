@@ -9,6 +9,7 @@ node_modules
 coverage
 /snapshots
 .schema-cache
+.schema-clones
 tsconfig.tsbuildinfo
 fixtures/**/node_modules
 fixtures/**/.schema-cache

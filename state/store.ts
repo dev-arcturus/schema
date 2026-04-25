@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { Graph, GraphEdge, GraphNode } from "@/extractor/types";
+import type { Graph, GraphEdge, GraphNode, NodeKind } from "@/extractor/types";
 import type { OpDescriptor, OpGraphPatch } from "@/ops/types";
 
 export type RepoOrigin =
@@ -73,6 +73,9 @@ type Store = {
   history: HistoryEntry[];
   failureFlash: { targetId: string; until: number } | null;
 
+  visibleKinds: Partial<Record<NodeKind, boolean>>;
+  toggleKind: (kind: NodeKind) => void;
+
   setRepoSource: (source: "local" | "github") => void;
   setRepoValue: (v: string) => void;
   setRepoToken: (t: string) => void;
@@ -109,6 +112,23 @@ export const useStore = create<Store>((set, get) => ({
 
   history: [],
   failureFlash: null,
+
+  visibleKinds: {
+    route_handler: true,
+    service: true,
+    data_access: true,
+    middleware: true,
+    model: true,
+    utility: true,
+    external: true,
+  },
+  toggleKind: (kind) =>
+    set((s) => ({
+      visibleKinds: {
+        ...s.visibleKinds,
+        [kind]: !(s.visibleKinds[kind] ?? true),
+      },
+    })),
 
   setRepoSource: (source) => set({ repoSource: source }),
   setRepoValue: (v) => set({ repoValue: v }),
