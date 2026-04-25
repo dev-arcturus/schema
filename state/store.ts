@@ -3,6 +3,45 @@
 import { create } from "zustand";
 import type { Graph, GraphEdge, GraphNode, NodeKind } from "@/extractor/types";
 import type { OpDescriptor, OpGraphPatch } from "@/ops/types";
+import type { Plan, Step, StepResult } from "@/lib/planSchema";
+
+export type Insight = {
+  id: string;
+  title: string;
+  rationale: string;
+  severity: "low" | "medium" | "high";
+  targetIds: string[];
+  suggestedPrompt: string;
+};
+
+export type ConversationTurn = {
+  prompt: string;
+  intent?: string;
+  appliedSteps?: string[];
+};
+
+export type PlanState =
+  | { phase: "idle" }
+  | { phase: "thinking"; prompt: string }
+  | {
+      phase: "preview";
+      prompt: string;
+      plan: Plan;
+    }
+  | {
+      phase: "running";
+      prompt: string;
+      plan: Plan;
+      results: StepResult[];
+      currentIndex: number;
+    }
+  | {
+      phase: "done";
+      prompt: string;
+      plan: Plan;
+      results: StepResult[];
+      ok: boolean;
+    };
 
 export type RepoOrigin =
   | { kind: "local" }
@@ -76,6 +115,15 @@ type Store = {
   visibleKinds: Partial<Record<NodeKind, boolean>>;
   toggleKind: (kind: NodeKind) => void;
 
+  planState: PlanState;
+  chatHistory: ConversationTurn[];
+  insights: Insight[];
+  insightsLoading: boolean;
+  submitPrompt: (prompt: string) => Promise<void>;
+  approvePlan: () => Promise<void>;
+  cancelPlan: () => void;
+  loadInsights: () => Promise<void>;
+
   setRepoSource: (source: "local" | "github") => void;
   setRepoValue: (v: string) => void;
   setRepoToken: (t: string) => void;
@@ -130,6 +178,185 @@ export const useStore = create<Store>((set, get) => ({
       },
     })),
 
+  planState: { phase: "idle" },
+  chatHistory: [],
+  insights: [],
+  insightsLoading: false,
+
+  async submitPrompt(prompt) {
+    const { graph, chatHistory } = get();
+    if (!graph || !prompt.trim()) return;
+    set({ planState: { phase: "thinking", prompt } });
+    try {
+      const res = await fetch("/api/plan/generate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ prompt, graph, history: chatHistory.slice(-3) }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.plan) {
+        throw new Error(data.error ?? "plan generation failed");
+      }
+      const plan: Plan = data.plan;
+      set({ planState: { phase: "preview", prompt, plan } });
+    } catch (err) {
+      set({
+        planState: { phase: "idle" },
+      });
+      console.error("submitPrompt failed:", err);
+      // Surface error inline via applyState (reuse existing failure UX)
+      set((s) => ({
+        applyState: {
+          phase: "error",
+          opName: "plan",
+          diff: "",
+          error: err instanceof Error ? err.message : "plan failed",
+          filesChanged: [],
+        },
+      }));
+    }
+  },
+
+  async approvePlan() {
+    const state = get();
+    const ps = state.planState;
+    if (ps.phase !== "preview") return;
+    const { plan, prompt } = ps;
+    const results: StepResult[] = plan.steps.map((s) => ({
+      status: "pending",
+      description: s.description,
+    }));
+    set({
+      planState: {
+        phase: "running",
+        prompt,
+        plan,
+        results,
+        currentIndex: 0,
+      },
+    });
+
+    let ok = true;
+    let workingGraph = state.graph!;
+    const appliedDescriptions: string[] = [];
+
+    for (let i = 0; i < plan.steps.length; i++) {
+      const step = plan.steps[i]!;
+      const cur = get().planState;
+      if (cur.phase !== "running") return; // cancelled
+      const newResults = [...cur.results];
+      newResults[i] = { ...newResults[i]!, status: "running" };
+      set({
+        planState: { ...cur, results: newResults, currentIndex: i },
+      });
+
+      try {
+        const res = await fetch("/api/plan/execute-step", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            repoPath: get().resolvedRepoPath,
+            graph: workingGraph,
+            step,
+            intent: prompt,
+          }),
+        });
+        const data = await res.json();
+        const cur2 = get().planState;
+        if (cur2.phase !== "running") return;
+        const r2 = [...cur2.results];
+        if (data.ok) {
+          r2[i] = {
+            status: "success",
+            description: data.description ?? step.description,
+            diff: data.diff,
+            filesChanged: data.filesChanged,
+            testOutput: data.testOutput,
+            intentCheck: data.intentCheck,
+          };
+          if (data.graphPatch) {
+            workingGraph = applyPatch(workingGraph, data.graphPatch);
+            set({ graph: workingGraph });
+          }
+          appliedDescriptions.push(step.description);
+        } else {
+          ok = false;
+          r2[i] = {
+            status: "failure",
+            description: step.description,
+            diff: data.diff ?? "",
+            filesChanged: data.filesChanged ?? [],
+            testOutput: data.testOutput,
+            error: data.error,
+            explanation: data.explanation,
+          };
+          // Mark remaining as skipped
+          for (let j = i + 1; j < r2.length; j++) {
+            r2[j] = { ...r2[j]!, status: "skipped" };
+          }
+          set({ planState: { ...cur2, results: r2, currentIndex: i } });
+          break;
+        }
+        set({ planState: { ...cur2, results: r2, currentIndex: i } });
+      } catch (err) {
+        ok = false;
+        const cur3 = get().planState;
+        if (cur3.phase !== "running") return;
+        const r3 = [...cur3.results];
+        r3[i] = {
+          status: "failure",
+          description: step.description,
+          error: err instanceof Error ? err.message : "request failed",
+        };
+        for (let j = i + 1; j < r3.length; j++) {
+          r3[j] = { ...r3[j]!, status: "skipped" };
+        }
+        set({ planState: { ...cur3, results: r3, currentIndex: i } });
+        break;
+      }
+    }
+
+    const final = get().planState;
+    if (final.phase !== "running") return;
+    set({
+      planState: {
+        phase: "done",
+        prompt,
+        plan,
+        results: final.results,
+        ok,
+      },
+      chatHistory: [
+        ...get().chatHistory,
+        { prompt, intent: plan.intent, appliedSteps: appliedDescriptions },
+      ],
+    });
+  },
+
+  cancelPlan() {
+    set({ planState: { phase: "idle" } });
+  },
+
+  async loadInsights() {
+    const { graph } = get();
+    if (!graph) return;
+    set({ insightsLoading: true });
+    try {
+      const res = await fetch("/api/insights", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ graph }),
+      });
+      const data = await res.json();
+      set({
+        insights: Array.isArray(data.insights) ? data.insights : [],
+        insightsLoading: false,
+      });
+    } catch {
+      set({ insightsLoading: false });
+    }
+  },
+
   setRepoSource: (source) => set({ repoSource: source }),
   setRepoValue: (v) => set({ repoValue: v }),
   setRepoToken: (t) => set({ repoToken: t }),
@@ -166,7 +393,10 @@ export const useStore = create<Store>((set, get) => ({
         origin: data.origin ?? null,
         resolvedRepoPath: data.repoPath ?? get().resolvedRepoPath,
         loading: false,
+        chatHistory: [],
+        insights: [],
       });
+      void get().loadInsights();
     } catch (err) {
       set({
         loading: false,

@@ -1,0 +1,157 @@
+import { NextResponse } from "next/server";
+import { anthropic } from "@ai-sdk/anthropic";
+import { generateObject } from "ai";
+import { planSchema, type Plan } from "@/lib/planSchema";
+import { OPS_REGISTRY_DESCRIPTION } from "@/lib/opsRegistryDescription";
+import type { Graph } from "@/extractor/types";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type Turn = { prompt: string; intent?: string; appliedSteps?: string[] };
+
+type Body = {
+  prompt: string;
+  graph: Graph;
+  history?: Turn[];
+};
+
+export async function POST(req: Request) {
+  try {
+    const body = (await req.json()) as Body;
+    if (!body?.prompt || !body?.graph) {
+      return NextResponse.json(
+        { error: "prompt and graph required" },
+        { status: 400 },
+      );
+    }
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json(
+        {
+          error:
+            "ANTHROPIC_API_KEY missing — the command bar requires Sonnet to plan steps.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const plan = await generatePlan(body.prompt, body.graph, body.history ?? []);
+    const sanitized = sanitizePlan(plan, body.graph);
+    return NextResponse.json({ plan: sanitized });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "plan generation failed" },
+      { status: 500 },
+    );
+  }
+}
+
+async function generatePlan(
+  prompt: string,
+  graph: Graph,
+  history: Turn[],
+): Promise<Plan> {
+  const compactNodes = graph.nodes.map((n) => ({
+    id: n.id,
+    name: n.name,
+    kind: n.kind,
+    file: n.file,
+    httpMethod: n.meta?.httpMethod,
+    httpPath: n.meta?.httpPath,
+    cluster: n.cluster,
+  }));
+
+  const compactEdges = graph.edges
+    .filter((e) => e.relation !== "imports")
+    .map((e) => ({
+      relation: e.relation,
+      source: e.source,
+      target: e.target,
+    }));
+
+  const compactClusters = graph.clusters.map((c) => ({
+    id: c.id,
+    name: c.name,
+    nodeIds: c.nodeIds,
+  }));
+
+  const historyText =
+    history.length > 0
+      ? "\nPrior turns (newest last):\n" +
+        history
+          .slice(-3)
+          .map(
+            (t, i) =>
+              `[${i + 1}] user: ${t.prompt}\n    intent: ${t.intent ?? "?"}\n    applied: ${(t.appliedSteps ?? []).join(", ") || "(nothing)"}`,
+          )
+          .join("\n")
+      : "";
+
+  const systemPrompt = [
+    "You are an architectural planner editing a TypeScript codebase through Schema.",
+    "You translate the user's intent into a Plan: an ordered list of steps that the executor can run.",
+    "Each step is either a registered Op call (preferred) or a free-form file edit (last resort).",
+    "Tests gate every step — partial failure is acceptable, but try to keep steps independent so a failure mid-plan still leaves a coherent state.",
+    "",
+    OPS_REGISTRY_DESCRIPTION,
+    "",
+    "Return JSON exactly matching the schema. Be precise:",
+    "- targetId must be one of the provided node ids verbatim.",
+    "- params shapes must match the op exactly. No placeholder values.",
+    "- For freeform steps, output the FULL new content of each file (not a diff). Keep the change minimal and reversible.",
+    "- Order steps so each one is testable independently when possible.",
+  ].join("\n");
+
+  const userPrompt = [
+    `User intent: ${prompt}`,
+    historyText,
+    "",
+    "Graph nodes:",
+    JSON.stringify(compactNodes, null, 2),
+    "",
+    "Architectural edges (no imports):",
+    JSON.stringify(compactEdges, null, 2),
+    "",
+    "Clusters:",
+    JSON.stringify(compactClusters, null, 2),
+  ].join("\n");
+
+  const { object } = await generateObject({
+    model: anthropic("claude-sonnet-4-6"),
+    schema: planSchema,
+    temperature: 0.1,
+    system: systemPrompt,
+    prompt: userPrompt,
+    maxTokens: 4000,
+  });
+
+  return object;
+}
+
+function sanitizePlan(plan: Plan, graph: Graph): Plan {
+  const nodeIds = new Set(graph.nodes.map((n) => n.id));
+  const sanitized: Plan["steps"] = [];
+
+  for (const step of plan.steps) {
+    if (step.kind === "op") {
+      if (!nodeIds.has(step.targetId)) {
+        sanitized.push({
+          ...step,
+          rationale:
+            step.rationale +
+            ` (warning: targetId not found in graph; will fail at exec time)`,
+          risk: "high",
+        });
+      } else {
+        sanitized.push(step);
+      }
+    } else {
+      // freeform — light validation
+      const cleanFiles = step.files.filter((f) => f.path && !f.path.includes(".."));
+      if (cleanFiles.length === 0) continue;
+      sanitized.push({ ...step, files: cleanFiles });
+    }
+  }
+
+  return { ...plan, steps: sanitized };
+}

@@ -47,17 +47,32 @@ export function FunctionNode({ data, selected }: NodeProps) {
         className="!h-1.5 !w-1.5 !border-canvas-border !bg-canvas-panel"
       />
       <div className="flex items-center gap-2">
-        <Icon className={cn("h-3.5 w-3.5", meta.tone)} strokeWidth={2} />
+        <Icon className={cn("h-3.5 w-3.5 shrink-0", meta.tone)} strokeWidth={2} />
         <span className="truncate font-mono text-[13px] text-canvas-ink">
           {node.name}
         </span>
       </div>
-      <div className="mt-1 flex items-center justify-between gap-2 text-2xs">
-        <span className={cn("uppercase tracking-wider", meta.tone)}>
+      <div className="mt-1 flex items-center gap-2 text-2xs">
+        <span
+          className={cn(
+            "shrink-0 uppercase tracking-wider",
+            meta.tone,
+          )}
+        >
           {meta.label}
         </span>
-        <span className="truncate text-canvas-subtle">{node.file}</span>
+        <span
+          className="min-w-0 flex-1 truncate text-right text-canvas-subtle"
+          title={node.file}
+        >
+          {shortPath(node.file)}
+        </span>
       </div>
     </div>
   );
+}
+
+function shortPath(p: string): string {
+  // Drop common src/ prefix and tail-truncate
+  return p.replace(/^src\//, "");
 }

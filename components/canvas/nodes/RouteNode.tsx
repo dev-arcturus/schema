@@ -43,18 +43,23 @@ export function RouteNode({ data, selected }: NodeProps) {
       <div className="flex items-center gap-2">
         <span
           className={cn(
-            "rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wider",
+            "shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wider",
             style.bg,
             style.ring,
           )}
         >
           {style.label}
         </span>
-        <span className="truncate font-mono text-[13px] text-canvas-ink">
+        <span className="min-w-0 truncate font-mono text-[13px] text-canvas-ink">
           {path}
         </span>
       </div>
-      <div className="mt-1 truncate text-2xs text-canvas-subtle">{node.file}</div>
+      <div
+        className="mt-1 truncate text-2xs text-canvas-subtle"
+        title={node.file}
+      >
+        {node.file.replace(/^src\//, "")}
+      </div>
     </div>
   );
 }

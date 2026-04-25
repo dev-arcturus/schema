@@ -5,6 +5,7 @@ import {
   Background,
   BackgroundVariant,
   Controls,
+  MarkerType,
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
@@ -19,12 +20,10 @@ import { layoutGraph } from "@/lib/layout";
 import { RELATION_STYLE } from "./edges/relationStyle";
 import { RouteNode } from "./nodes/RouteNode";
 import { FunctionNode } from "./nodes/FunctionNode";
-import { ClusterNode } from "./nodes/ClusterNode";
 
 const nodeTypes: NodeTypes = {
   route: RouteNode,
   function: FunctionNode,
-  cluster: ClusterNode,
 };
 
 export function GraphCanvas() {
@@ -67,18 +66,6 @@ export function GraphCanvas() {
   const flowNodes: Node[] = useMemo(() => {
     if (!filteredGraph) return [];
     const out: Node[] = [];
-    for (const region of layout.clusters) {
-      out.push({
-        id: `__cluster:${region.id}`,
-        type: "cluster",
-        position: { x: region.x, y: region.y },
-        data: { name: region.name },
-        style: { width: region.width, height: region.height, zIndex: -10 },
-        draggable: false,
-        selectable: false,
-        focusable: false,
-      });
-    }
     for (const n of filteredGraph.nodes) {
       const pos = layout.positions.get(n.id) ?? { x: 0, y: 0 };
       const isRoute = n.kind === "route_handler" && n.meta?.httpMethod;
@@ -117,16 +104,17 @@ export function GraphCanvas() {
           target: e.target,
           type: "smoothstep",
           animated: e.relation === "applies_middleware",
-          label: style.label,
-          labelStyle: { fill: "hsl(220 8% 60%)", fontSize: 10 },
-          labelBgStyle: { fill: "hsl(220 14% 7%)" },
-          labelBgPadding: [4, 2] as [number, number],
-          labelBgBorderRadius: 4,
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            width: 18,
+            height: 18,
+            color: style.stroke,
+          },
           style: {
             stroke: style.stroke,
-            strokeWidth: style.width,
+            strokeWidth: style.width + (isSelected ? 0.5 : 0),
             ...(style.dash ? { strokeDasharray: style.dash } : {}),
-            opacity: isSelected ? 1 : 0.85,
+            opacity: isSelected ? 1 : 0.9,
           },
           data: { relation: e.relation },
         };
@@ -179,7 +167,6 @@ export function GraphCanvas() {
           maskStrokeColor="hsl(220 14% 18%)"
           maskStrokeWidth={1}
           nodeColor={(n) => {
-            if (n.type === "cluster") return "transparent";
             const k = (n.data as { node?: { kind?: string } })?.node?.kind;
             switch (k) {
               case "route_handler":

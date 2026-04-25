@@ -4,7 +4,6 @@ import { useStore } from "@/state/store";
 import { CanvasShell } from "@/components/canvas/CanvasShell";
 import { GraphCanvas } from "@/components/canvas/GraphCanvas";
 import { TopBar } from "@/components/canvas/TopBar";
-import { OpsMenu } from "@/components/canvas/OpsMenu";
 import { SidePanel } from "@/components/canvas/SidePanel";
 import { EmptyState } from "@/components/canvas/EmptyState";
 import { Shortcuts } from "@/components/canvas/Shortcuts";
@@ -13,6 +12,9 @@ import { Toast } from "@/components/canvas/Toast";
 import { ReadmePeek } from "@/components/canvas/ReadmePeek";
 import { SearchBar } from "@/components/canvas/SearchBar";
 import { KindFilter } from "@/components/canvas/KindFilter";
+import { CommandBar } from "@/components/canvas/CommandBar";
+import { PlanPanel } from "@/components/canvas/PlanPanel";
+import { InsightsRail } from "@/components/canvas/InsightsRail";
 
 export default function Page() {
   const graph = useStore((s) => s.graph);
@@ -37,7 +39,9 @@ export default function Page() {
           <ReadmePeek />
           <SearchBar />
           <KindFilter />
-          <OpsMenu />
+          <CommandBar />
+          <PlanPanel />
+          <InsightsRail />
           <Toast />
         </>
       ) : (

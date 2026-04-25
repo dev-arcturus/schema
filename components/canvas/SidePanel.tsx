@@ -1,20 +1,52 @@
 "use client";
 
-import { CheckCircle2, Loader2, X, AlertTriangle } from "lucide-react";
+import {
+  CheckCircle2,
+  Loader2,
+  X,
+  AlertTriangle,
+  Cable,
+  Clock4,
+  Shield,
+  Scissors,
+} from "lucide-react";
 import { useStore } from "@/state/store";
 import { cn } from "@/lib/utils";
 import { ParamsForm } from "./ParamsForm";
 import { DiffView } from "./DiffView";
+import type { OpDescriptor } from "@/ops/types";
+
+const CATEGORY_ICONS: Record<OpDescriptor["category"], React.ComponentType<{ className?: string }>> = {
+  middleware: Shield,
+  caching: Clock4,
+  transform: Cable,
+  extract: Scissors,
+};
 
 export function SidePanel() {
   const pendingOp = useStore((s) => s.pendingOp);
   const applicableOps = useStore((s) => s.applicableOps);
+  const applicableLoading = useStore((s) => s.applicableLoading);
   const applyState = useStore((s) => s.applyState);
+  const selection = useStore((s) => s.selection);
+  const graph = useStore((s) => s.graph);
+  const startOp = useStore((s) => s.startOp);
   const cancelOp = useStore((s) => s.cancelOp);
   const applyOp = useStore((s) => s.applyOp);
   const dismissApplyState = useStore((s) => s.dismissApplyState);
 
   if (!pendingOp && applyState.phase === "idle") {
+    if (selection && graph) {
+      return (
+        <SelectionInspector
+          selection={selection}
+          graph={graph}
+          ops={applicableOps}
+          loading={applicableLoading}
+          startOp={startOp}
+        />
+      );
+    }
     return <EmptyHint />;
   }
 
@@ -193,11 +225,89 @@ function EmptyHint() {
   return (
     <div className="flex h-full flex-col items-start justify-start gap-3 px-5 py-6 text-xs text-canvas-muted">
       <div className="text-sm font-medium text-canvas-ink">Inspector</div>
-      <p>Click any node or edge to see the architectural ops available there.</p>
+      <p>
+        Type an architectural change in the command bar, or click a node to see
+        the ops available there.
+      </p>
       <div className="mt-2 rounded border border-canvas-border bg-canvas-bg/60 px-3 py-2 text-2xs leading-relaxed">
-        Try: select <span className="font-mono text-canvas-ink">GET /todos</span>{" "}
-        and add the <span className="font-mono text-canvas-ink">requireAuth</span>{" "}
-        middleware. Watch the auth gap close.
+        Try: <span className="font-mono text-canvas-ink">"protect every unauthed resource route"</span>
+      </div>
+    </div>
+  );
+}
+
+function SelectionInspector({
+  selection,
+  graph,
+  ops,
+  loading,
+  startOp,
+}: {
+  selection: { kind: "node" | "edge"; id: string };
+  graph: { nodes: { id: string; name: string; kind: string; file: string; meta?: { httpMethod?: string; httpPath?: string } }[]; edges: { id: string; relation: string }[] };
+  ops: OpDescriptor[];
+  loading: boolean;
+  startOp: (name: string) => void;
+}) {
+  const node = selection.kind === "node" ? graph.nodes.find((n) => n.id === selection.id) : null;
+  const edge = selection.kind === "edge" ? graph.edges.find((e) => e.id === selection.id) : null;
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="border-b border-canvas-border px-4 py-3">
+        <div className="text-2xs uppercase tracking-wider text-canvas-subtle">
+          {selection.kind}
+        </div>
+        {node ? (
+          <>
+            <div className="mt-1 truncate text-sm text-canvas-ink">
+              {node.meta?.httpMethod
+                ? `${node.meta.httpMethod} ${node.meta.httpPath}`
+                : node.name}
+            </div>
+            <div className="mt-0.5 truncate font-mono text-2xs text-canvas-subtle">
+              {node.file}
+            </div>
+          </>
+        ) : edge ? (
+          <div className="mt-1 truncate text-sm text-canvas-ink">{edge.relation}</div>
+        ) : null}
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-3">
+        <div className="text-2xs uppercase tracking-wider text-canvas-subtle">
+          Available ops
+        </div>
+        <div className="mt-2 flex flex-col gap-1">
+          {loading ? (
+            <div className="text-xs text-canvas-muted">resolving…</div>
+          ) : ops.length === 0 ? (
+            <div className="text-xs text-canvas-muted">
+              No ops apply here. Try a freeform prompt instead.
+            </div>
+          ) : (
+            ops.map((op) => {
+              const Icon = CATEGORY_ICONS[op.category];
+              return (
+                <button
+                  key={op.name}
+                  onClick={() => startOp(op.name)}
+                  className="group flex items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-canvas-bg/40"
+                >
+                  <Icon className="h-3.5 w-3.5 text-canvas-muted group-hover:text-accent" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs text-canvas-ink">
+                      {op.description}
+                    </div>
+                    <div className="truncate font-mono text-2xs text-canvas-subtle">
+                      {op.name}
+                    </div>
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
   );
