@@ -34,6 +34,11 @@ export function Shortcuts() {
         e.preventDefault();
         useStore.getState().undoGraph();
       }
+
+      // D: Toggle presenter mode with P key
+      if (e.key === "p" || e.key === "P") {
+        useStore.getState().togglePresenterMode();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

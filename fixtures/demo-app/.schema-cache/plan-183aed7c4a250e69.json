@@ -1,0 +1,44 @@
+{
+  "plan": {
+    "intent": "Apply requireAuth middleware to every route under /todos (GET /todos, POST /todos, DELETE /todos/:id)",
+    "steps": [
+      {
+        "kind": "op",
+        "description": "Apply requireAuth middleware to GET /todos",
+        "opName": "addMiddleware",
+        "targetId": "route:src/routes/todos.ts:GET:/todos:10",
+        "params": {
+          "middleware": "requireAuth",
+          "middlewareFile": "src/middleware/auth.ts"
+        },
+        "risk": "low",
+        "rationale": "GET /todos currently has no auth guard; requireAuth must be added to protect it."
+      },
+      {
+        "kind": "op",
+        "description": "Apply requireAuth middleware to POST /todos (confirm/no-op if already present)",
+        "opName": "addMiddleware",
+        "targetId": "route:src/routes/todos.ts:POST:/todos:20",
+        "params": {
+          "middleware": "requireAuth",
+          "middlewareFile": "src/middleware/auth.ts"
+        },
+        "risk": "low",
+        "rationale": "The graph shows an applies_middleware edge already exists for this route; including the step ensures consistency and lets the executor surface any discrepancy."
+      },
+      {
+        "kind": "op",
+        "description": "Apply requireAuth middleware to DELETE /todos/:id",
+        "opName": "addMiddleware",
+        "targetId": "route:src/routes/todos.ts:DELETE:/todos/:id:34",
+        "params": {
+          "middleware": "requireAuth",
+          "middlewareFile": "src/middleware/auth.ts"
+        },
+        "risk": "low",
+        "rationale": "DELETE /todos/:id currently has no auth guard; requireAuth must be added to prevent unauthenticated deletions."
+      }
+    ],
+    "notes": "From the graph, POST /todos already has requireAuth applied (applies_middleware edge exists). We still include it so the executor can confirm/no-op cleanly. GET /todos and DELETE /todos/:id are missing the middleware and need it added."
+  }
+}

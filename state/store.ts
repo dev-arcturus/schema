@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import type { Graph, GraphEdge, GraphNode, NodeKind } from "@/extractor/types";
 import type { OpDescriptor, OpGraphPatch } from "@/ops/types";
-import type { Plan, StepResult } from "@/lib/planSchema";
+import type { Plan, Step, StepResult } from "@/lib/planSchema";
 import type { Rule, Violation } from "@/lib/rules";
 
 export type Insight = {
@@ -118,6 +118,8 @@ type Store = {
   history: HistoryEntry[];
   failureFlash: { targetId: string; until: number } | null;
   recentlyAdded: { nodeIds: Set<string>; edgeIds: Set<string>; until: number } | null;
+  changedNodeIds: Set<string>;
+  changedEdgeIds: Set<string>;
   focusTargetIds: string[];
   hoverHighlightIds: string[];
   setHoverHighlight: (ids: string[]) => void;
@@ -162,10 +164,40 @@ type Store = {
   retryLastPrompt: () => Promise<void>;
   loadInsights: () => Promise<void>;
 
+  // B: Step-by-step execution mode
+  stepByStepMode: boolean;
+  toggleStepByStep: () => void;
+  pendingContinue: (() => void) | null;
+  continueNextStep: () => void;
+
+  // F: Reiterative reasoning on failure
+  failureDecision: {
+    stepIndex: number;
+    resolve: (action: "retry" | "revise" | "skip" | "stop") => void;
+  } | null;
+  resolveFailure: (action: "retry" | "revise" | "skip" | "stop") => void;
+
+  // C: Graph annotations
+  executingTargetId: string | null;
+  graphSnapshot: Graph | null;
+  showGraphBefore: boolean;
+  toggleGraphBefore: () => void;
+
+  // D: Presenter mode
+  presenterMode: boolean;
+  togglePresenterMode: () => void;
+  fullscreenDiff: { diff: string; description: string; files: string[] } | null;
+  setFullscreenDiff: (d: { diff: string; description: string; files: string[] } | null) => void;
+
+  // E: Legend
+  showLegend: boolean;
+  dismissLegend: () => void;
+
   setRepoSource: (source: "local" | "github") => void;
   setRepoValue: (v: string) => void;
   setRepoToken: (t: string) => void;
   loadGraph: () => Promise<void>;
+  resetDemo: () => Promise<void>;
   selectNode: (id: string) => void;
   selectEdge: (id: string) => void;
   clearSelection: () => void;
@@ -200,6 +232,8 @@ export const useStore = create<Store>((set, get) => ({
   history: [],
   failureFlash: null,
   recentlyAdded: null,
+  changedNodeIds: new Set(),
+  changedEdgeIds: new Set(),
   focusTargetIds: [],
   hoverHighlightIds: [],
   setHoverHighlight: (ids) => set({ hoverHighlightIds: ids }),
@@ -211,9 +245,7 @@ export const useStore = create<Store>((set, get) => ({
   commandBarFocused: false,
   setCommandBarFocused: (focused) => set({ commandBarFocused: focused }),
 
-  rightPanelWidth: typeof window !== "undefined"
-    ? Number(localStorage.getItem("schema:rightPanelWidth") ?? 360)
-    : 360,
+  rightPanelWidth: 360,
   setRightPanelWidth: (width) => {
     const clamped = Math.min(720, Math.max(260, width));
     if (typeof window !== "undefined") {
@@ -376,6 +408,38 @@ export const useStore = create<Store>((set, get) => ({
   insights: [],
   insightsLoading: false,
 
+  // B: Step-by-step
+  stepByStepMode: true,
+  toggleStepByStep: () => set((s) => ({ stepByStepMode: !s.stepByStepMode })),
+  pendingContinue: null,
+  continueNextStep: () => {
+    const fn = get().pendingContinue;
+    if (fn) fn();
+  },
+
+  // F: Reiterative reasoning
+  failureDecision: null,
+  resolveFailure: (action) => {
+    const fd = get().failureDecision;
+    if (fd) fd.resolve(action);
+  },
+
+  // C: Graph annotations
+  executingTargetId: null,
+  graphSnapshot: null,
+  showGraphBefore: false,
+  toggleGraphBefore: () => set((s) => ({ showGraphBefore: !s.showGraphBefore })),
+
+  // D: Presenter mode
+  presenterMode: false,
+  togglePresenterMode: () => set((s) => ({ presenterMode: !s.presenterMode })),
+  fullscreenDiff: null,
+  setFullscreenDiff: (d) => set({ fullscreenDiff: d }),
+
+  // E: Legend
+  showLegend: true,
+  dismissLegend: () => set({ showLegend: false }),
+
   async submitPrompt(prompt) {
     const { graph, chatHistory } = get();
     if (!graph || !prompt.trim()) return;
@@ -465,6 +529,8 @@ export const useStore = create<Store>((set, get) => ({
       status: "pending",
       description: s.description,
     }));
+
+    // C: Snapshot graph for before/after toggle
     set({
       planState: {
         phase: "running",
@@ -473,6 +539,10 @@ export const useStore = create<Store>((set, get) => ({
         results,
         currentIndex: 0,
       },
+      graphSnapshot: structuredClone(state.graph),
+      showGraphBefore: false,
+      changedNodeIds: new Set(),
+      changedEdgeIds: new Set(),
     });
 
     let ok = true;
@@ -487,6 +557,11 @@ export const useStore = create<Store>((set, get) => ({
       const step = plan.steps[i]!;
       const cur = get().planState;
       if (cur.phase !== "running") return; // cancelled
+
+      // C: Highlight target node during execution
+      const targetId = step.kind === "op" ? step.targetId : null;
+      set({ executingTargetId: targetId });
+
       const newResults = [...cur.results];
       newResults[i] = { ...newResults[i]!, status: "running" };
       set({
@@ -597,18 +672,23 @@ export const useStore = create<Store>((set, get) => ({
             const newEdgeIds = new Set<string>(
               (patch.addEdges ?? []).map((e) => e.id),
             );
+            // Accumulate persistent changed sets + short flash
+            const prevChanged = get().changedNodeIds;
+            const prevChangedEdges = get().changedEdgeIds;
             set({
               graph: workingGraph,
               recentlyAdded: {
                 nodeIds: newNodeIds,
                 edgeIds: newEdgeIds,
-                until: Date.now() + 3500,
+                until: Date.now() + 6000,
               },
+              changedNodeIds: new Set([...prevChanged, ...newNodeIds]),
+              changedEdgeIds: new Set([...prevChangedEdges, ...newEdgeIds]),
             });
           }
           appliedDescriptions.push(step.description);
         } else {
-          ok = false;
+          // F: Reiterative reasoning — ask user what to do on failure
           r2[i] = {
             status: "failure",
             description: step.description,
@@ -618,16 +698,77 @@ export const useStore = create<Store>((set, get) => ({
             error: data.error as string,
             explanation: data.explanation as string | undefined,
           };
-          // Mark remaining as skipped
-          for (let j = i + 1; j < r2.length; j++) {
-            r2[j] = { ...r2[j]!, status: "skipped" };
+          set({ planState: { ...cur2, results: r2, currentIndex: i }, executingTargetId: null });
+
+          // Wait for user decision
+          const action = await new Promise<"retry" | "revise" | "skip" | "stop">((resolve) => {
+            set({ failureDecision: { stepIndex: i, resolve } });
+          });
+          set({ failureDecision: null });
+
+          if (get().planState.phase !== "running") return; // cancelled while waiting
+
+          if (action === "stop") {
+            ok = false;
+            const curStop = get().planState;
+            if (curStop.phase !== "running") return;
+            const rStop = [...curStop.results];
+            for (let j = i + 1; j < rStop.length; j++) {
+              rStop[j] = { ...rStop[j]!, status: "skipped" };
+            }
+            set({ planState: { ...curStop, results: rStop, currentIndex: i } });
+            break;
+          } else if (action === "skip") {
+            // Mark as skipped and continue
+            const curSkip = get().planState;
+            if (curSkip.phase !== "running") return;
+            const rSkip = [...curSkip.results];
+            rSkip[i] = { ...rSkip[i]!, status: "skipped" };
+            set({ planState: { ...curSkip, results: rSkip, currentIndex: i } });
+            continue;
+          } else if (action === "retry" || action === "revise") {
+            // Reset step to pending and re-run
+            const curRetry = get().planState;
+            if (curRetry.phase !== "running") return;
+            const rRetry = [...curRetry.results];
+            rRetry[i] = { ...rRetry[i]!, status: "pending" };
+            set({ planState: { ...curRetry, results: rRetry, currentIndex: i } });
+
+            if (action === "revise") {
+              // Ask LLM to revise the step based on the error
+              try {
+                const revised = await reviseStep(
+                  get().resolvedRepoPath,
+                  workingGraph,
+                  step,
+                  data.error as string,
+                  data.explanation as string | undefined,
+                  data.testOutput as string | undefined,
+                  prompt,
+                );
+                if (revised) {
+                  plan.steps[i] = revised;
+                }
+              } catch {
+                // revision failed, will retry original step
+              }
+            }
+            i--; // decrement so the loop re-runs this step
+            continue;
           }
-          set({ planState: { ...cur2, results: r2, currentIndex: i } });
-          break;
         }
-        set({ planState: { ...cur2, results: r2, currentIndex: i } });
+        set({ planState: { ...cur2, results: r2, currentIndex: i }, executingTargetId: null });
+
+        // B: Step-by-step mode — pause between steps
+        if (data.ok && get().stepByStepMode && i < plan.steps.length - 1) {
+          await new Promise<void>((resolve) => {
+            set({ pendingContinue: resolve });
+          });
+          set({ pendingContinue: null });
+          if (get().planState.phase !== "running") return; // cancelled while paused
+        }
       } catch (err) {
-        ok = false;
+        // F: Even on network/parse errors, ask user what to do
         const cur3 = get().planState;
         if (cur3.phase !== "running") return;
         const r3 = [...cur3.results];
@@ -636,11 +777,40 @@ export const useStore = create<Store>((set, get) => ({
           description: step.description,
           error: err instanceof Error ? err.message : "request failed",
         };
-        for (let j = i + 1; j < r3.length; j++) {
-          r3[j] = { ...r3[j]!, status: "skipped" };
+        set({ planState: { ...cur3, results: r3, currentIndex: i }, executingTargetId: null });
+
+        const action = await new Promise<"retry" | "revise" | "skip" | "stop">((resolve) => {
+          set({ failureDecision: { stepIndex: i, resolve } });
+        });
+        set({ failureDecision: null });
+
+        if (get().planState.phase !== "running") return;
+
+        if (action === "stop") {
+          ok = false;
+          const rStop = [...(get().planState as { results: StepResult[] }).results];
+          for (let j = i + 1; j < rStop.length; j++) {
+            rStop[j] = { ...rStop[j]!, status: "skipped" };
+          }
+          set({ planState: { ...get().planState as Extract<PlanState, { phase: "running" }>, results: rStop, currentIndex: i } });
+          break;
+        } else if (action === "skip") {
+          const curS = get().planState;
+          if (curS.phase !== "running") return;
+          const rS = [...curS.results];
+          rS[i] = { ...rS[i]!, status: "skipped" };
+          set({ planState: { ...curS, results: rS } });
+          continue;
+        } else {
+          // retry or revise
+          const curR = get().planState;
+          if (curR.phase !== "running") return;
+          const rR = [...curR.results];
+          rR[i] = { ...rR[i]!, status: "pending" };
+          set({ planState: { ...curR, results: rR } });
+          i--;
+          continue;
         }
-        set({ planState: { ...cur3, results: r3, currentIndex: i } });
-        break;
       }
     }
 
@@ -661,6 +831,8 @@ export const useStore = create<Store>((set, get) => ({
         ok,
       },
       focusTargetIds: [],
+      executingTargetId: null,
+      pendingContinue: null,
       chatHistory: [
         ...get().chatHistory,
         { prompt, intent: plan.intent, appliedSteps: appliedDescriptions },
@@ -671,10 +843,46 @@ export const useStore = create<Store>((set, get) => ({
         filesChanged: prevStats.filesChanged + filesTouched.size,
       },
     });
+    // If any freeform steps succeeded, the on-disk code changed but the
+    // in-memory graph still has stale edges. Re-extract to get the real graph.
+    const hadFreeform = plan.steps.some((s, i) =>
+      s.kind === "freeform" && final.results[i]?.status === "success",
+    );
+    if (hadFreeform && filesTouched.size > 0) {
+      // Re-extract graph from the modified source files
+      try {
+        const res = await fetch("/api/extract", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            source: get().repoSource,
+            value: get().repoValue,
+            skipCache: true,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          set({
+            graph: data.graph,
+            summary: data.summary ?? get().summary,
+            clusterSource: data.clusterSource,
+          });
+        }
+      } catch {
+        // ignore — stale graph is better than no graph
+      }
+    }
+    // Refresh insights and rules against the (now-current) graph
+    void get().loadInsights();
+    void get().loadRules();
   },
 
   cancelPlan() {
-    set({ planState: { phase: "idle" }, focusTargetIds: [] });
+    const fn = get().pendingContinue;
+    if (fn) fn(); // unblock the paused loop so it exits cleanly
+    const fd = get().failureDecision;
+    if (fd) fd.resolve("stop"); // unblock failure decision
+    set({ planState: { phase: "idle" }, focusTargetIds: [], executingTargetId: null, pendingContinue: null, failureDecision: null });
   },
 
   async retryLastPrompt() {
@@ -710,6 +918,26 @@ export const useStore = create<Store>((set, get) => ({
   setRepoSource: (source) => set({ repoSource: source }),
   setRepoValue: (v) => set({ repoValue: v }),
   setRepoToken: (t) => set({ repoToken: t }),
+
+  async resetDemo() {
+    try {
+      await fetch("/api/demo-reset", { method: "POST" });
+      // Clear all state and re-extract
+      set({
+        graph: null,
+        planState: { phase: "idle" },
+        chatHistory: [],
+        insights: [],
+        changedNodeIds: new Set(),
+        changedEdgeIds: new Set(),
+        graphSnapshot: null,
+        sessionStats: { prompts: 0, stepsApplied: 0, filesChanged: 0 },
+      });
+      await get().loadGraph();
+    } catch {
+      // ignore
+    }
+  },
 
   async loadGraph() {
     set({ loading: true, loadError: null });
@@ -941,16 +1169,57 @@ function paramsForApi(
   return flat;
 }
 
+async function reviseStep(
+  repoPath: string,
+  graph: Graph,
+  failedStep: Step,
+  error: string,
+  explanation: string | undefined,
+  testOutput: string | undefined,
+  originalPrompt: string,
+): Promise<Step | null> {
+  try {
+    const res = await fetch("/api/plan/revise-step", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        repoPath,
+        graph,
+        step: failedStep,
+        error,
+        explanation,
+        testOutput: testOutput ? testOutput.split("\n").slice(-40).join("\n") : undefined,
+        originalPrompt,
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.step ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function applyPatch(graph: Graph, patch: OpGraphPatch): Graph {
   const nodes: GraphNode[] = patch.removeNodes
     ? graph.nodes.filter((n) => !patch.removeNodes!.includes(n.id))
     : [...graph.nodes];
-  if (patch.addNodes) nodes.push(...patch.addNodes);
+  if (patch.addNodes) {
+    const existingIds = new Set(nodes.map((n) => n.id));
+    for (const n of patch.addNodes) {
+      if (!existingIds.has(n.id)) nodes.push(n);
+    }
+  }
 
   const edges: GraphEdge[] = patch.removeEdges
     ? graph.edges.filter((e) => !patch.removeEdges!.includes(e.id))
     : [...graph.edges];
-  if (patch.addEdges) edges.push(...patch.addEdges);
+  if (patch.addEdges) {
+    const existingIds = new Set(edges.map((e) => e.id));
+    for (const e of patch.addEdges) {
+      if (!existingIds.has(e.id)) edges.push(e);
+    }
+  }
 
   return { ...graph, nodes, edges };
 }

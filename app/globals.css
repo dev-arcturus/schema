@@ -135,6 +135,42 @@
   animation: schema-pop 1400ms ease-out 0s 2;
 }
 
+/* Persistent changed indicator — green border stays until next plan */
+.schema-node-changed > div {
+  box-shadow: 0 0 0 1.5px hsl(142 70% 50% / 0.6), 0 4px 16px hsl(220 14% 2% / 0.5);
+}
+
+/* C: Executing target — strong amber glow */
+@keyframes schema-executing-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 hsl(40 95% 60% / 0.0), 0 0 20px hsl(40 95% 60% / 0.0);
+  }
+  50% {
+    box-shadow: 0 0 0 8px hsl(40 95% 60% / 0.3), 0 0 24px hsl(40 95% 60% / 0.15);
+  }
+}
+
+.schema-node-executing > div {
+  animation: schema-executing-pulse 1200ms ease-in-out infinite;
+  border-color: hsl(40 95% 60% / 0.7) !important;
+}
+
+/* C: Edge draw-in animation */
+@keyframes schema-edge-draw {
+  from {
+    stroke-dashoffset: 200;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.schema-edge-animate .react-flow__edge-path {
+  stroke-dasharray: 200;
+  animation: schema-edge-draw 600ms ease-out forwards;
+}
+
 @keyframes schema-focus-pulse {
   0%,
   100% {

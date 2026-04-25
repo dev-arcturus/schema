@@ -10,11 +10,15 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function graphHash(graph: Graph): string {
-  const compact = graph.nodes
+  const nodes = graph.nodes
     .map((n) => `${n.id}:${n.kind}`)
     .sort()
     .join(",");
-  return crypto.createHash("sha256").update(compact).digest("hex").slice(0, 16);
+  const edges = graph.edges
+    .map((e) => `${e.source}->${e.target}:${e.relation}`)
+    .sort()
+    .join(",");
+  return crypto.createHash("sha256").update(nodes + "|" + edges).digest("hex").slice(0, 16);
 }
 
 const insightSchema = z.object({

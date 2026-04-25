@@ -141,6 +141,20 @@
       "cluster": "cluster:repos"
     },
     {
+      "id": "fn:src/repos/todoRepoImpl.ts:makeTodoRepo",
+      "kind": "data_access",
+      "name": "makeTodoRepo",
+      "file": "src/repos/todoRepoImpl.ts",
+      "range": {
+        "start": 160,
+        "end": 402
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:repos"
+    },
+    {
       "id": "fn:src/repos/userRepo.ts:createUser",
       "kind": "data_access",
       "name": "createUser",
@@ -176,6 +190,20 @@
       "range": {
         "start": 889,
         "end": 1226
+      },
+      "meta": {
+        "isExported": true
+      },
+      "cluster": "cluster:repos"
+    },
+    {
+      "id": "fn:src/repos/userRepoImpl.ts:makeUserRepo",
+      "kind": "data_access",
+      "name": "makeUserRepo",
+      "file": "src/repos/userRepoImpl.ts",
+      "range": {
+        "start": 168,
+        "end": 420
       },
       "meta": {
         "isExported": true
@@ -577,6 +605,26 @@
       }
     },
     {
+      "id": "import:src/repos/interfaces.ts->src/repos/todoRepo.ts:1",
+      "source": "file:src/repos/interfaces.ts",
+      "target": "file:src/repos/todoRepo.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/repos/interfaces.ts",
+        "line": 1
+      }
+    },
+    {
+      "id": "import:src/repos/interfaces.ts->src/repos/userRepo.ts:2",
+      "source": "file:src/repos/interfaces.ts",
+      "target": "file:src/repos/userRepo.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/repos/interfaces.ts",
+        "line": 2
+      }
+    },
+    {
       "id": "import:src/repos/todoRepo.ts->src/db/sqlite.ts:1",
       "source": "file:src/repos/todoRepo.ts",
       "target": "file:src/db/sqlite.ts",
@@ -587,6 +635,36 @@
       }
     },
     {
+      "id": "import:src/repos/todoRepoImpl.ts->src/db/sqlite.ts:1",
+      "source": "file:src/repos/todoRepoImpl.ts",
+      "target": "file:src/db/sqlite.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/repos/todoRepoImpl.ts",
+        "line": 1
+      }
+    },
+    {
+      "id": "import:src/repos/todoRepoImpl.ts->src/repos/interfaces.ts:2",
+      "source": "file:src/repos/todoRepoImpl.ts",
+      "target": "file:src/repos/interfaces.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/repos/todoRepoImpl.ts",
+        "line": 2
+      }
+    },
+    {
+      "id": "import:src/repos/todoRepoImpl.ts->src/repos/todoRepo.ts:3",
+      "source": "file:src/repos/todoRepoImpl.ts",
+      "target": "file:src/repos/todoRepo.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/repos/todoRepoImpl.ts",
+        "line": 3
+      }
+    },
+    {
       "id": "import:src/repos/userRepo.ts->src/db/sqlite.ts:1",
       "source": "file:src/repos/userRepo.ts",
       "target": "file:src/db/sqlite.ts",
@@ -594,6 +672,36 @@
       "location": {
         "file": "src/repos/userRepo.ts",
         "line": 1
+      }
+    },
+    {
+      "id": "import:src/repos/userRepoImpl.ts->src/db/sqlite.ts:1",
+      "source": "file:src/repos/userRepoImpl.ts",
+      "target": "file:src/db/sqlite.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/repos/userRepoImpl.ts",
+        "line": 1
+      }
+    },
+    {
+      "id": "import:src/repos/userRepoImpl.ts->src/repos/interfaces.ts:2",
+      "source": "file:src/repos/userRepoImpl.ts",
+      "target": "file:src/repos/interfaces.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/repos/userRepoImpl.ts",
+        "line": 2
+      }
+    },
+    {
+      "id": "import:src/repos/userRepoImpl.ts->src/repos/userRepo.ts:3",
+      "source": "file:src/repos/userRepoImpl.ts",
+      "target": "file:src/repos/userRepo.ts",
+      "relation": "imports",
+      "location": {
+        "file": "src/repos/userRepoImpl.ts",
+        "line": 3
       }
     },
     {
@@ -817,6 +925,66 @@
       }
     },
     {
+      "id": "call:fn:src/repos/todoRepoImpl.ts:makeTodoRepo->fn:src/repos/todoRepo.ts:listTodos:7",
+      "source": "fn:src/repos/todoRepoImpl.ts:makeTodoRepo",
+      "target": "fn:src/repos/todoRepo.ts:listTodos",
+      "relation": "calls",
+      "location": {
+        "file": "src/repos/todoRepoImpl.ts",
+        "line": 7
+      }
+    },
+    {
+      "id": "call:fn:src/repos/todoRepoImpl.ts:makeTodoRepo->fn:src/repos/todoRepo.ts:createTodo:8",
+      "source": "fn:src/repos/todoRepoImpl.ts:makeTodoRepo",
+      "target": "fn:src/repos/todoRepo.ts:createTodo",
+      "relation": "calls",
+      "location": {
+        "file": "src/repos/todoRepoImpl.ts",
+        "line": 8
+      }
+    },
+    {
+      "id": "call:fn:src/repos/todoRepoImpl.ts:makeTodoRepo->fn:src/repos/todoRepo.ts:deleteTodo:9",
+      "source": "fn:src/repos/todoRepoImpl.ts:makeTodoRepo",
+      "target": "fn:src/repos/todoRepo.ts:deleteTodo",
+      "relation": "calls",
+      "location": {
+        "file": "src/repos/todoRepoImpl.ts",
+        "line": 9
+      }
+    },
+    {
+      "id": "call:fn:src/repos/userRepoImpl.ts:makeUserRepo->fn:src/repos/userRepo.ts:findUserByEmail:7",
+      "source": "fn:src/repos/userRepoImpl.ts:makeUserRepo",
+      "target": "fn:src/repos/userRepo.ts:findUserByEmail",
+      "relation": "calls",
+      "location": {
+        "file": "src/repos/userRepoImpl.ts",
+        "line": 7
+      }
+    },
+    {
+      "id": "call:fn:src/repos/userRepoImpl.ts:makeUserRepo->fn:src/repos/userRepo.ts:findUserById:8",
+      "source": "fn:src/repos/userRepoImpl.ts:makeUserRepo",
+      "target": "fn:src/repos/userRepo.ts:findUserById",
+      "relation": "calls",
+      "location": {
+        "file": "src/repos/userRepoImpl.ts",
+        "line": 8
+      }
+    },
+    {
+      "id": "call:fn:src/repos/userRepoImpl.ts:makeUserRepo->fn:src/repos/userRepo.ts:createUser:9",
+      "source": "fn:src/repos/userRepoImpl.ts:makeUserRepo",
+      "target": "fn:src/repos/userRepo.ts:createUser",
+      "relation": "calls",
+      "location": {
+        "file": "src/repos/userRepoImpl.ts",
+        "line": 9
+      }
+    },
+    {
       "id": "call:fn:src/routes/auth.ts:authRouter->fn:src/services/authService.ts:registerUser:14",
       "source": "fn:src/routes/auth.ts:authRouter",
       "target": "fn:src/services/authService.ts:registerUser",
@@ -981,9 +1149,11 @@
         "fn:src/repos/todoRepo.ts:listTodos",
         "fn:src/repos/todoRepo.ts:createTodo",
         "fn:src/repos/todoRepo.ts:deleteTodo",
+        "fn:src/repos/todoRepoImpl.ts:makeTodoRepo",
         "fn:src/repos/userRepo.ts:createUser",
         "fn:src/repos/userRepo.ts:findUserByEmail",
-        "fn:src/repos/userRepo.ts:findUserById"
+        "fn:src/repos/userRepo.ts:findUserById",
+        "fn:src/repos/userRepoImpl.ts:makeUserRepo"
       ]
     },
     {

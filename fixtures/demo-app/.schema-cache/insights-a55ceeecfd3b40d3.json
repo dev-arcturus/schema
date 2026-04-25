@@ -1,0 +1,99 @@
+{
+  "insights": [
+    {
+      "id": "insight-1",
+      "title": "GET /health has no auth or rate-limit middleware",
+      "rationale": "All /todos routes apply requireAuth, but GET /health is completely unprotected and has no middleware at all — asymmetric and potentially abusable as a free probe endpoint.",
+      "severity": "low",
+      "targetIds": [
+        "route:src/app.ts:GET:/health:16",
+        "fn:src/middleware/auth.ts:requireAuth"
+      ],
+      "suggestedPrompt": "Add rate-limiting middleware to the GET /health route in src/app.ts."
+    },
+    {
+      "id": "insight-2",
+      "title": "Auth routes POST /auth/register and POST /auth/login have no middleware",
+      "rationale": "Every /todos route applies requireAuth, but the two auth routes have zero middleware — no rate-limiting, no brute-force protection. Asymmetric and a security gap.",
+      "severity": "high",
+      "targetIds": [
+        "route:src/routes/auth.ts:POST:/auth/register:8",
+        "route:src/routes/auth.ts:POST:/auth/login:21",
+        "fn:src/middleware/auth.ts:requireAuth"
+      ],
+      "suggestedPrompt": "Add rate-limiting middleware to POST /auth/register and POST /auth/login in src/routes/auth.ts."
+    },
+    {
+      "id": "insight-3",
+      "title": "verifyToken called redundantly by both identifyUser and requireAuth",
+      "rationale": "Both middleware functions independently call verifyToken on every request, duplicating JWT verification work. A single upstream middleware pass with caching would halve the crypto cost.",
+      "severity": "medium",
+      "targetIds": [
+        "fn:src/middleware/auth.ts:identifyUser",
+        "fn:src/middleware/auth.ts:requireAuth",
+        "fn:src/services/authService.ts:verifyToken"
+      ],
+      "suggestedPrompt": "Wrap verifyToken with request-scoped memoization so identifyUser and requireAuth share one verification result per request."
+    },
+    {
+      "id": "insight-4",
+      "title": "findUserByEmail called from both registerUser and loginUser without caching",
+      "rationale": "findUserByEmail is a hot read path hit on every login and every registration duplicate-check. No caching layer exists, causing repeated DB round-trips for the same email lookups.",
+      "severity": "medium",
+      "targetIds": [
+        "fn:src/repos/userRepo.ts:findUserByEmail",
+        "fn:src/services/authService.ts:registerUser",
+        "fn:src/services/authService.ts:loginUser"
+      ],
+      "suggestedPrompt": "Add a short-TTL cache (e.g. 30 s) around findUserByEmail in userRepo to reduce redundant DB reads."
+    },
+    {
+      "id": "insight-5",
+      "title": "toTodo row-mapper lives in todoRepo.ts alongside query functions",
+      "rationale": "toTodo is a pure data-transformation function mixed into the data-access file. It should be extracted to a dedicated mapper/transformer module to keep repo files focused on DB I/O.",
+      "severity": "low",
+      "targetIds": [
+        "fn:src/repos/todoRepo.ts:toTodo",
+        "fn:src/repos/todoRepo.ts:createTodo"
+      ],
+      "suggestedPrompt": "Extract toTodo into a new src/repos/todoMapper.ts module and import it from todoRepo.ts."
+    },
+    {
+      "id": "insight-6",
+      "title": "signToken and verifyToken co-located with business logic in authService.ts",
+      "rationale": "JWT signing/verification are infrastructure concerns mixed into the service layer. Extracting them to a dedicated tokenService or jwtUtil module would make authService.ts easier to test and the token strategy swappable.",
+      "severity": "medium",
+      "targetIds": [
+        "fn:src/services/authService.ts:signToken",
+        "fn:src/services/authService.ts:verifyToken",
+        "fn:src/services/authService.ts:registerUser",
+        "fn:src/services/authService.ts:loginUser"
+      ],
+      "suggestedPrompt": "Extract signToken and verifyToken from authService.ts into a new src/services/tokenService.ts module."
+    },
+    {
+      "id": "insight-7",
+      "title": "todosRouter is a high-fanout coupling hub (3 service calls + 3 route handlers)",
+      "rationale": "todosRouter directly wires 3 route handlers to 3 service functions and also owns middleware application, making it a coupling hub. Splitting per-resource route files reduces blast radius of changes.",
+      "severity": "medium",
+      "targetIds": [
+        "fn:src/routes/todos.ts:todosRouter",
+        "route:src/routes/todos.ts:GET:/todos:10",
+        "route:src/routes/todos.ts:POST:/todos:20",
+        "route:src/routes/todos.ts:DELETE:/todos/:id:34"
+      ],
+      "suggestedPrompt": "Split todosRouter into separate handler functions per route (getTodosHandler, addTodoHandler, removeTodoHandler) in src/routes/todos.ts."
+    },
+    {
+      "id": "insight-8",
+      "title": "listTodos has no caching despite being the primary read path",
+      "rationale": "getTodos → listTodos is called on every GET /todos with no cache. For a list that changes infrequently, even a short TTL cache per user would significantly reduce SQLite read load.",
+      "severity": "medium",
+      "targetIds": [
+        "fn:src/services/todoService.ts:getTodos",
+        "fn:src/repos/todoRepo.ts:listTodos"
+      ],
+      "suggestedPrompt": "Add a per-user short-TTL cache around listTodos in todoService.ts to reduce repeated DB reads on GET /todos."
+    }
+  ]
+}

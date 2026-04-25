@@ -35,5 +35,23 @@
     "severity": "warn",
     "createdAt": 1700000000001,
     "enabled": true
+  },
+  {
+    "id": "rule:moenzggc",
+    "title": "Services must not call data layer directly",
+    "prompt": "services shdnt call data layer directly",
+    "predicate": {
+      "type": "no_edge",
+      "source": {
+        "kind": "service"
+      },
+      "target": {
+        "kind": "data_access"
+      },
+      "relation": "calls"
+    },
+    "severity": "warn",
+    "createdAt": 1777141198092,
+    "enabled": true
   }
 ]

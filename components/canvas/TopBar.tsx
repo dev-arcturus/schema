@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Layers,
   Search,
@@ -9,6 +10,7 @@ import {
   ShieldCheck,
   BookOpen,
   X,
+  RotateCcw,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useStore } from "@/state/store";
@@ -58,6 +60,7 @@ export function TopBar({
             <CoverageButton />
             <ReadmeButton />
             <SearchButton />
+            <ResetDemoButton />
           </div>
         </>
       ) : null}
@@ -97,6 +100,31 @@ function CoverageButton() {
   );
 }
 
+function ResetDemoButton() {
+  const repoSource = useStore((s) => s.repoSource);
+  const resetDemo = useStore((s) => s.resetDemo);
+  const [resetting, setResetting] = useState(false);
+
+  // Only show for local fixture repos
+  if (repoSource !== "local") return null;
+
+  return (
+    <button
+      onClick={async () => {
+        setResetting(true);
+        await resetDemo();
+        setResetting(false);
+      }}
+      disabled={resetting}
+      className="flex shrink-0 items-center gap-1.5 rounded px-2 py-1 text-2xs uppercase tracking-wider text-canvas-muted transition-colors hover:bg-canvas-bg/50 hover:text-canvas-ink disabled:opacity-50"
+      title="Reset demo fixture to original state (undo all plan changes)"
+    >
+      <RotateCcw className={cn("h-3 w-3", resetting && "animate-spin")} />
+      reset demo
+    </button>
+  );
+}
+
 function ReadmeButton() {
   const readme = useStore((s) => s.readme);
   const origin = useStore((s) => s.origin);
@@ -108,39 +136,51 @@ function ReadmeButton() {
       ? `${origin.owner}/${origin.repo}`
       : readme.file ?? "README";
 
+  const btnRef = useRef<HTMLButtonElement>(null);
+
   return (
     <div className="relative">
       <button
+        ref={btnRef}
         onClick={() => setOpen((v) => !v)}
         className="flex shrink-0 items-center gap-1.5 rounded px-2 py-1 text-2xs uppercase tracking-wider text-canvas-muted transition-colors hover:bg-canvas-bg/50 hover:text-canvas-ink"
       >
         <BookOpen className="h-3 w-3" />
         readme
       </button>
-      {open ? (
-        <div className="absolute left-0 top-9 z-50 w-[420px] animate-fade-in rounded-md border border-canvas-border bg-canvas-panel/95 shadow-panel backdrop-blur">
-          <div className="flex items-center justify-between border-b border-canvas-border px-3 py-2">
-            <div className="flex items-center gap-2 text-xs">
-              <BookOpen className="h-3.5 w-3.5 text-canvas-muted" />
-              <span className="text-canvas-ink">{title}</span>
-              {readme.file ? (
-                <span className="font-mono text-2xs text-canvas-subtle">
-                  {readme.file}
-                </span>
-              ) : null}
-            </div>
-            <button
-              onClick={() => setOpen(false)}
-              className="rounded p-1 text-canvas-subtle hover:bg-canvas-bg/40 hover:text-canvas-ink"
+      {open && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="fixed z-[9999] w-[420px] animate-fade-in rounded-md border border-canvas-border bg-canvas-panel/95 shadow-panel backdrop-blur"
+              style={{
+                top: (btnRef.current?.getBoundingClientRect().bottom ?? 48) + 4,
+                left: btnRef.current?.getBoundingClientRect().left ?? 200,
+              }}
             >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <pre className="max-h-[420px] overflow-auto px-3 py-2 font-mono text-2xs leading-relaxed text-canvas-muted whitespace-pre-wrap">
-            {readme.excerpt}
-          </pre>
-        </div>
-      ) : null}
+              <div className="flex items-center justify-between border-b border-canvas-border px-3 py-2">
+                <div className="flex items-center gap-2 text-xs">
+                  <BookOpen className="h-3.5 w-3.5 text-canvas-muted" />
+                  <span className="text-canvas-ink">{title}</span>
+                  {readme.file ? (
+                    <span className="font-mono text-2xs text-canvas-subtle">
+                      {readme.file}
+                    </span>
+                  ) : null}
+                </div>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="rounded p-1 text-canvas-subtle hover:bg-canvas-bg/40 hover:text-canvas-ink"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <pre className="max-h-[420px] overflow-auto px-3 py-2 font-mono text-2xs leading-relaxed text-canvas-muted whitespace-pre-wrap">
+                {readme.excerpt}
+              </pre>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

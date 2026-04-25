@@ -12,7 +12,7 @@
       "meta": {
         "isExported": true
       },
-      "cluster": "cluster:app.ts"
+      "cluster": "cluster:app"
     },
     {
       "id": "fn:src/db/migrations.ts:runMigrations",
@@ -86,7 +86,7 @@
     },
     {
       "id": "fn:src/repos/todoRepo.ts:toTodo",
-      "kind": "data_access",
+      "kind": "utility",
       "name": "toTodo",
       "file": "src/repos/todoRepo.ts",
       "range": {
@@ -96,7 +96,7 @@
       "meta": {
         "isExported": false
       },
-      "cluster": "cluster:repos"
+      "cluster": "cluster:todos"
     },
     {
       "id": "fn:src/repos/todoRepo.ts:listTodos",
@@ -110,7 +110,7 @@
       "meta": {
         "isExported": true
       },
-      "cluster": "cluster:repos"
+      "cluster": "cluster:todos"
     },
     {
       "id": "fn:src/repos/todoRepo.ts:createTodo",
@@ -124,7 +124,7 @@
       "meta": {
         "isExported": true
       },
-      "cluster": "cluster:repos"
+      "cluster": "cluster:todos"
     },
     {
       "id": "fn:src/repos/todoRepo.ts:deleteTodo",
@@ -138,7 +138,7 @@
       "meta": {
         "isExported": true
       },
-      "cluster": "cluster:repos"
+      "cluster": "cluster:todos"
     },
     {
       "id": "fn:src/repos/userRepo.ts:createUser",
@@ -152,7 +152,7 @@
       "meta": {
         "isExported": true
       },
-      "cluster": "cluster:repos"
+      "cluster": "cluster:auth"
     },
     {
       "id": "fn:src/repos/userRepo.ts:findUserByEmail",
@@ -166,7 +166,7 @@
       "meta": {
         "isExported": true
       },
-      "cluster": "cluster:repos"
+      "cluster": "cluster:auth"
     },
     {
       "id": "fn:src/repos/userRepo.ts:findUserById",
@@ -180,7 +180,7 @@
       "meta": {
         "isExported": true
       },
-      "cluster": "cluster:repos"
+      "cluster": "cluster:auth"
     },
     {
       "id": "fn:src/routes/auth.ts:authRouter",
@@ -194,7 +194,7 @@
       "meta": {
         "isExported": true
       },
-      "cluster": "cluster:routes"
+      "cluster": "cluster:auth"
     },
     {
       "id": "fn:src/routes/todos.ts:todosRouter",
@@ -202,13 +202,13 @@
       "name": "todosRouter",
       "file": "src/routes/todos.ts",
       "range": {
-        "start": 266,
-        "end": 1324
+        "start": 280,
+        "end": 1378
       },
       "meta": {
         "isExported": true
       },
-      "cluster": "cluster:routes"
+      "cluster": "cluster:todos"
     },
     {
       "id": "fn:src/services/authService.ts:registerUser",
@@ -222,7 +222,7 @@
       "meta": {
         "isExported": true
       },
-      "cluster": "cluster:services"
+      "cluster": "cluster:auth"
     },
     {
       "id": "fn:src/services/authService.ts:loginUser",
@@ -236,7 +236,7 @@
       "meta": {
         "isExported": true
       },
-      "cluster": "cluster:services"
+      "cluster": "cluster:auth"
     },
     {
       "id": "fn:src/services/authService.ts:signToken",
@@ -250,7 +250,7 @@
       "meta": {
         "isExported": false
       },
-      "cluster": "cluster:services"
+      "cluster": "cluster:auth"
     },
     {
       "id": "fn:src/services/authService.ts:verifyToken",
@@ -264,7 +264,7 @@
       "meta": {
         "isExported": true
       },
-      "cluster": "cluster:services"
+      "cluster": "cluster:auth"
     },
     {
       "id": "fn:src/services/todoService.ts:getTodos",
@@ -278,7 +278,7 @@
       "meta": {
         "isExported": true
       },
-      "cluster": "cluster:services"
+      "cluster": "cluster:todos"
     },
     {
       "id": "fn:src/services/todoService.ts:addTodo",
@@ -292,7 +292,7 @@
       "meta": {
         "isExported": true
       },
-      "cluster": "cluster:services"
+      "cluster": "cluster:todos"
     },
     {
       "id": "fn:src/services/todoService.ts:removeTodo",
@@ -306,7 +306,7 @@
       "meta": {
         "isExported": true
       },
-      "cluster": "cluster:services"
+      "cluster": "cluster:todos"
     },
     {
       "id": "route:src/app.ts:GET:/health:16",
@@ -322,7 +322,7 @@
         "httpPath": "/health",
         "routerName": "app"
       },
-      "cluster": "cluster:app.ts"
+      "cluster": "cluster:app"
     },
     {
       "id": "route:src/routes/auth.ts:POST:/auth/register:8",
@@ -338,7 +338,7 @@
         "httpPath": "/auth/register",
         "routerName": "router"
       },
-      "cluster": "cluster:routes"
+      "cluster": "cluster:auth"
     },
     {
       "id": "route:src/routes/auth.ts:POST:/auth/login:21",
@@ -354,7 +354,7 @@
         "httpPath": "/auth/login",
         "routerName": "router"
       },
-      "cluster": "cluster:routes"
+      "cluster": "cluster:auth"
     },
     {
       "id": "route:src/routes/todos.ts:GET:/todos:10",
@@ -362,15 +362,15 @@
       "name": "GET /todos",
       "file": "src/routes/todos.ts",
       "range": {
-        "start": 342,
-        "end": 544
+        "start": 356,
+        "end": 585
       },
       "meta": {
         "httpMethod": "GET",
         "httpPath": "/todos",
         "routerName": "router"
       },
-      "cluster": "cluster:routes"
+      "cluster": "cluster:todos"
     },
     {
       "id": "route:src/routes/todos.ts:POST:/todos:20",
@@ -378,15 +378,15 @@
       "name": "POST /todos",
       "file": "src/routes/todos.ts",
       "range": {
-        "start": 549,
-        "end": 931
+        "start": 590,
+        "end": 972
       },
       "meta": {
         "httpMethod": "POST",
         "httpPath": "/todos",
         "routerName": "router"
       },
-      "cluster": "cluster:routes"
+      "cluster": "cluster:todos"
     },
     {
       "id": "route:src/routes/todos.ts:DELETE:/todos/:id:34",
@@ -394,15 +394,15 @@
       "name": "DELETE /todos/:id",
       "file": "src/routes/todos.ts",
       "range": {
-        "start": 936,
-        "end": 1303
+        "start": 977,
+        "end": 1357
       },
       "meta": {
         "httpMethod": "DELETE",
         "httpPath": "/todos/:id",
         "routerName": "router"
       },
-      "cluster": "cluster:routes"
+      "cluster": "cluster:todos"
     }
   ],
   "edges": [
@@ -677,6 +677,26 @@
       }
     },
     {
+      "id": "route:src/routes/todos.ts:GET:/todos:10->fn:src/middleware/auth.ts:requireAuth:mw",
+      "source": "route:src/routes/todos.ts:GET:/todos:10",
+      "target": "fn:src/middleware/auth.ts:requireAuth",
+      "relation": "applies_middleware",
+      "location": {
+        "file": "src/routes/todos.ts",
+        "line": 10
+      }
+    },
+    {
+      "id": "route:src/routes/todos.ts:GET:/todos:10->fn:src/middleware/auth.ts:identifyUser:mw",
+      "source": "route:src/routes/todos.ts:GET:/todos:10",
+      "target": "fn:src/middleware/auth.ts:identifyUser",
+      "relation": "applies_middleware",
+      "location": {
+        "file": "src/routes/todos.ts",
+        "line": 10
+      }
+    },
+    {
       "id": "route:src/routes/todos.ts:POST:/todos:20->fn:src/middleware/auth.ts:requireAuth:mw",
       "source": "route:src/routes/todos.ts:POST:/todos:20",
       "target": "fn:src/middleware/auth.ts:requireAuth",
@@ -684,6 +704,16 @@
       "location": {
         "file": "src/routes/todos.ts",
         "line": 20
+      }
+    },
+    {
+      "id": "route:src/routes/todos.ts:DELETE:/todos/:id:34->fn:src/middleware/auth.ts:requireAuth:mw",
+      "source": "route:src/routes/todos.ts:DELETE:/todos/:id:34",
+      "target": "fn:src/middleware/auth.ts:requireAuth",
+      "relation": "applies_middleware",
+      "location": {
+        "file": "src/routes/todos.ts",
+        "line": 34
       }
     },
     {
@@ -949,19 +979,44 @@
   ],
   "clusters": [
     {
-      "id": "cluster:app.ts",
-      "name": "App.ts",
+      "id": "cluster:app",
+      "name": "App",
       "nodeIds": [
         "fn:src/app.ts:createApp",
         "route:src/app.ts:GET:/health:16"
       ]
     },
     {
-      "id": "cluster:db",
-      "name": "Database",
+      "id": "cluster:auth",
+      "name": "Auth",
       "nodeIds": [
-        "fn:src/db/migrations.ts:runMigrations",
-        "fn:src/db/sqlite.ts:openDatabase"
+        "fn:src/routes/auth.ts:authRouter",
+        "route:src/routes/auth.ts:POST:/auth/register:8",
+        "route:src/routes/auth.ts:POST:/auth/login:21",
+        "fn:src/services/authService.ts:registerUser",
+        "fn:src/services/authService.ts:loginUser",
+        "fn:src/services/authService.ts:signToken",
+        "fn:src/services/authService.ts:verifyToken",
+        "fn:src/repos/userRepo.ts:createUser",
+        "fn:src/repos/userRepo.ts:findUserByEmail",
+        "fn:src/repos/userRepo.ts:findUserById"
+      ]
+    },
+    {
+      "id": "cluster:todos",
+      "name": "Todos",
+      "nodeIds": [
+        "fn:src/routes/todos.ts:todosRouter",
+        "route:src/routes/todos.ts:GET:/todos:10",
+        "route:src/routes/todos.ts:POST:/todos:20",
+        "route:src/routes/todos.ts:DELETE:/todos/:id:34",
+        "fn:src/services/todoService.ts:getTodos",
+        "fn:src/services/todoService.ts:addTodo",
+        "fn:src/services/todoService.ts:removeTodo",
+        "fn:src/repos/todoRepo.ts:toTodo",
+        "fn:src/repos/todoRepo.ts:listTodos",
+        "fn:src/repos/todoRepo.ts:createTodo",
+        "fn:src/repos/todoRepo.ts:deleteTodo"
       ]
     },
     {
@@ -974,42 +1029,11 @@
       ]
     },
     {
-      "id": "cluster:repos",
-      "name": "Data",
+      "id": "cluster:db",
+      "name": "Database",
       "nodeIds": [
-        "fn:src/repos/todoRepo.ts:toTodo",
-        "fn:src/repos/todoRepo.ts:listTodos",
-        "fn:src/repos/todoRepo.ts:createTodo",
-        "fn:src/repos/todoRepo.ts:deleteTodo",
-        "fn:src/repos/userRepo.ts:createUser",
-        "fn:src/repos/userRepo.ts:findUserByEmail",
-        "fn:src/repos/userRepo.ts:findUserById"
-      ]
-    },
-    {
-      "id": "cluster:routes",
-      "name": "Routes",
-      "nodeIds": [
-        "fn:src/routes/auth.ts:authRouter",
-        "fn:src/routes/todos.ts:todosRouter",
-        "route:src/routes/auth.ts:POST:/auth/register:8",
-        "route:src/routes/auth.ts:POST:/auth/login:21",
-        "route:src/routes/todos.ts:GET:/todos:10",
-        "route:src/routes/todos.ts:POST:/todos:20",
-        "route:src/routes/todos.ts:DELETE:/todos/:id:34"
-      ]
-    },
-    {
-      "id": "cluster:services",
-      "name": "Services",
-      "nodeIds": [
-        "fn:src/services/authService.ts:registerUser",
-        "fn:src/services/authService.ts:loginUser",
-        "fn:src/services/authService.ts:signToken",
-        "fn:src/services/authService.ts:verifyToken",
-        "fn:src/services/todoService.ts:getTodos",
-        "fn:src/services/todoService.ts:addTodo",
-        "fn:src/services/todoService.ts:removeTodo"
+        "fn:src/db/migrations.ts:runMigrations",
+        "fn:src/db/sqlite.ts:openDatabase"
       ]
     }
   ],

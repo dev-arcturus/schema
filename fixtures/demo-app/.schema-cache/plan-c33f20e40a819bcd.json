@@ -1,0 +1,39 @@
+{
+  "plan": {
+    "intent": "Refactor service functions to receive data-layer dependencies as parameters (dependency injection) instead of importing them directly, and update route callers to pass the dependencies in.",
+    "steps": [
+      {
+        "kind": "freeform",
+        "description": "Refactor all six service functions across authService.ts and todoService.ts to accept their data-layer dependencies as parameters instead of importing them directly, and update the route files (auth.ts, todos.ts) to import the repo factory functions (makeUserRepo, makeTodoRepo) and pass the concrete repo instances when calling the service functions. Specifically: (1) In src/services/authService.ts, remove direct imports of createUser and findUserByEmail from userRepo.ts. Add a UserRepo interface/type (or import it) and update registerUser and loginUser to accept a userRepo parameter with the needed methods. (2) In src/services/todoService.ts, remove direct imports of listTodos, createTodo, deleteTodo from todoRepo.ts. Add a TodoRepo interface/type (or import it) and update getTodos, addTodo, and removeTodo to accept a todoRepo parameter with the needed methods. (3) In src/routes/auth.ts, import makeUserRepo (from src/repos/userRepoImpl.ts) and the db instance, construct a userRepo, and pass it to registerUser and loginUser calls. (4) In src/routes/todos.ts, import makeTodoRepo (from src/repos/todoRepoImpl.ts) and the db instance, construct a todoRepo, and pass it to getTodos, addTodo, and removeTodo calls.",
+        "files": [
+          {
+            "path": "src/services/authService.ts",
+            "content": ""
+          },
+          {
+            "path": "src/services/todoService.ts",
+            "content": ""
+          },
+          {
+            "path": "src/routes/auth.ts",
+            "content": ""
+          },
+          {
+            "path": "src/routes/todos.ts",
+            "content": ""
+          },
+          {
+            "path": "src/repos/userRepoImpl.ts",
+            "content": ""
+          },
+          {
+            "path": "src/repos/todoRepoImpl.ts",
+            "content": ""
+          }
+        ],
+        "risk": "medium",
+        "rationale": "This is a coordinated multi-file refactor: service signatures change, direct repo imports are removed from services, and route files must be updated simultaneously to pass the correct repo instances. All files must be changed together to avoid broken imports or type errors. Medium risk because it touches the service/route boundary across multiple files, but the logic itself is unchanged — only the wiring moves up to the route layer."
+      }
+    ]
+  }
+}

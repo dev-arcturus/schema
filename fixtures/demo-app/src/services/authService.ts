@@ -1,7 +1,5 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import type { DB } from "../db/sqlite.js";
-import { createUser, findUserByEmail } from "../repos/userRepo.js";
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "dev-only-secret-change-me";
 const TOKEN_TTL = "7d";
@@ -12,27 +10,33 @@ export type AuthResult = {
   email: string;
 };
 
+export interface UserRepo {
+  findUserByEmail: (email: string) => { id: number; email: string; passwordHash: string } | undefined;
+  createUser: (email: string, passwordHash: string) => { id: number; email: string };
+  findUserById?: (id: number) => { id: number; email: string } | undefined;
+}
+
 export async function registerUser(
-  db: DB,
+  userRepo: UserRepo,
   email: string,
   password: string,
 ): Promise<AuthResult> {
-  const existing = findUserByEmail(db, email);
+  const existing = userRepo.findUserByEmail(email);
   if (existing) {
     throw new ServiceError("email_taken", 409, "email already registered");
   }
   const passwordHash = await bcrypt.hash(password, 10);
-  const user = createUser(db, email, passwordHash);
+  const user = userRepo.createUser(email, passwordHash);
   const token = signToken(user.id);
   return { token, userId: user.id, email: user.email };
 }
 
 export async function loginUser(
-  db: DB,
+  userRepo: UserRepo,
   email: string,
   password: string,
 ): Promise<AuthResult> {
-  const user = findUserByEmail(db, email);
+  const user = userRepo.findUserByEmail(email);
   if (!user) {
     throw new ServiceError("invalid_credentials", 401, "invalid credentials");
   }
